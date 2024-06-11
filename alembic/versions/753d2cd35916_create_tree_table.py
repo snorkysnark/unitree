@@ -1,8 +1,8 @@
 """create tree table
 
-Revision ID: d08043d09c51
+Revision ID: 753d2cd35916
 Revises: 
-Create Date: 2024-06-11 19:05:52.631904
+Create Date: 2024-06-11 19:43:58.415806
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from unitree.models import Rational
 
 # revision identifiers, used by Alembic.
-revision: str = 'd08043d09c51'
+revision: str = '753d2cd35916'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

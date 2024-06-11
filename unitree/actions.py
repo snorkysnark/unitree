@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from typing import Optional, cast
-from sqlalchemy import Row, func
+from sqlalchemy import Row, func, text
 from sqlalchemy.orm import Session
 from psycopg2.extensions import connection as RawConnection, cursor as RawCursor
 
@@ -44,9 +44,10 @@ def _insert_node(
     if not after:
         # If left bound not specified, try to set it to the biggest right_key within the allowed range
         after = _first(
-            db.query(func.max(models.Node.right_key))
-            .where(models.Node.right_key < before)
-            .one_or_none()
+            db.execute(
+                text("SELECT max(right_key) FROM tree WHERE right_key < :before"),
+                {"before": before},
+            ).one_or_none()
         )
 
     with _raw_cursor(db) as cursor:

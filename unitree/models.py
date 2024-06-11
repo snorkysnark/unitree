@@ -1,17 +1,26 @@
-from sqlalchemy import Column, Integer, String, JSON, TypeDecorator
-from sqlalchemy.ext.compiler import compiles
+from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy.types import UserDefinedType
 
 from .database import Base
 
 
-class Rational(TypeDecorator):
-    impl = String
+class Rational(UserDefinedType):
     cache_ok = True
 
+    def get_col_spec(self):
+        return "rational"
 
-@compiles(Rational, "postgresql")
-def compile_rational(type_, compiler, **kw):
-    return "rational"
+    def bind_processor(self, dialect):
+        def process(value):
+            return value
+
+        return process
+
+    def result_processor(self, dialect, coltype):
+        def process(value):
+            return value
+
+        return process
 
 
 class Node(Base):
