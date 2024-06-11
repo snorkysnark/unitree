@@ -18,7 +18,7 @@ class Node(Base):
     __tablename__ = "tree"
 
     id = Column(Integer, primary_key=True)
-    left = Column(Rational, nullable=False, index=True)
-    right = Column(Rational, nullable=False, index=True)
+    left_key = Column(Rational, nullable=False, index=True)
+    right_key = Column(Rational, nullable=False, index=True)
     title = Column(String)
     data = Column(JSON)
