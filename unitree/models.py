@@ -20,5 +20,6 @@ class Node(Base):
     id = Column(Integer, primary_key=True)
     left_key = Column(Rational, nullable=False, index=True)
     right_key = Column(Rational, nullable=False, index=True)
+    depth = Column(Integer, nullable=False)
     title = Column(String)
     data = Column(JSON)

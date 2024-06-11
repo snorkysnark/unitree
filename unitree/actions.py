@@ -4,7 +4,7 @@ from sqlalchemy import Row, func
 from sqlalchemy.orm import Session
 from psycopg2.extensions import connection as RawConnection, cursor as RawCursor
 
-from .models import Node
+from . import models
 from .schema import NewNode
 
 
@@ -37,14 +37,15 @@ def _insert_node(
     *,
     after: Optional[str] = None,
     before: Optional[str] = None,
+    depth: int = 0,
 ):
     """Insert node and its children between the indices"""
 
     if not after:
         # If left bound not specified, try to set it to the biggest right_key within the allowed range
         after = _first(
-            db.query(func.max(Node.right_key))
-            .where(Node.right_key < before)
+            db.query(func.max(models.Node.right_key))
+            .where(models.Node.right_key < before)
             .one_or_none()
         )
 
@@ -54,13 +55,19 @@ def _insert_node(
 
         next_key = left_key
         for child in node.children:
-            next_key = _insert_node(db, child, after=next_key, before=before)
+            next_key = _insert_node(
+                db, child, after=next_key, before=before, depth=depth + 1
+            )
 
         right_key = _rational_intermediate(cursor, next_key, before)
 
         db.add(
-            Node(
-                left_key=left_key, right_key=right_key, title=node.title, data=node.data
+            models.Node(
+                left_key=left_key,
+                right_key=right_key,
+                depth=depth,
+                title=node.title,
+                data=node.data,
             )
         )
 
