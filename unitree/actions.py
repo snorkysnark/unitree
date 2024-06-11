@@ -38,6 +38,8 @@ def _insert_node(
     after: Optional[str] = None,
     before: Optional[str] = None,
 ):
+    """Insert node and its children between the indices"""
+
     if not after:
         # If left bound not specified, try to set it to the biggest right_key within the allowed range
         after = _first(
@@ -66,5 +68,7 @@ def _insert_node(
 
 
 def insert_tree(db: Session, root: NewNode, before: Optional[str] = None):
+    """Insert tree immediately before the given fraction"""
+
     _insert_node(db, root, before=before)
     db.commit()
