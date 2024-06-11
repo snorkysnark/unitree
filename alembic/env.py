@@ -29,7 +29,6 @@ target_metadata = Base.metadata
 
 
 def render_item(type_, obj, autogen_context):
-    print(obj, type(obj))
     if isinstance(obj, Rational):
         autogen_context.imports.add("from unitree.models import Rational")
         return "Rational()"
