@@ -42,10 +42,15 @@ def _insert_node(
     """Insert node and its children between the indices"""
 
     if not after:
-        # If left bound not specified, try to set it to the biggest right_key within the allowed range
+        # If left bound not specified, try to set it to the largest key within the allowed range
         after = _first(
             db.execute(
-                text("SELECT max(right_key) FROM tree WHERE right_key < :before"),
+                text(
+                    """select greatest(
+                        (select max(right_key) from tree where right_key < :before),
+                        (select max(left_key) from tree where left_key < :before)
+                    );"""
+                ),
                 {"before": before},
             ).one_or_none()
         )
