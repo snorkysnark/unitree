@@ -80,3 +80,7 @@ def insert_tree(db: Session, root: NewNode, before: Optional[str] = None):
 
     _insert_node(db, root, before=before)
     db.commit()
+
+
+def get_tree(db: Session):
+    return db.query(models.Node).order_by(models.Node.left_key).all()

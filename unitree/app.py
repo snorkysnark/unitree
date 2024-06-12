@@ -1,7 +1,8 @@
 from alembic.config import Config as AlembicConfig
 import alembic.command
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
+from fastapi.templating import Jinja2Templates
 
 from .settings import settings
 from .database import SessionLocal
@@ -28,9 +29,18 @@ def get_db():
 
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 
 @app.post("/insert")
 def insert_tree(data: InsertTreeBody, db: Session = Depends(get_db)):
     actions.insert_tree(db, data.root, before=data.before)
     return {}
+
+
+@app.get("/")
+def tree_view(request: Request, db: Session = Depends(get_db)):
+    tree = actions.get_tree(db)
+    return templates.TemplateResponse(
+        request=request, name="tree.html", context={"tree": tree}
+    )
