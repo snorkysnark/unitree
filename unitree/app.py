@@ -34,7 +34,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.post("/insert")
 def insert_tree(data: InsertTreeBody, db: Session = Depends(get_db)):
-    actions.insert_tree(db, data.root, before=data.before)
+    actions.insert_tree(db, data.root, after=data.after, before=data.before)
     return {}
 
 

@@ -1,8 +1,9 @@
 from contextlib import contextmanager
 from typing import Optional, cast
-from sqlalchemy import Row, func, text
+from sqlalchemy import Row, func, select, text, and_, not_
 from sqlalchemy.orm import Session
 from psycopg2.extensions import connection as RawConnection, cursor as RawCursor
+from returns.maybe import Maybe
 
 from . import models
 from .schema import NewNode
@@ -15,8 +16,12 @@ def _raw_cursor(db: Session):
 
 
 def _rational_intermediate(
-    cursor: RawCursor, left_key: str, right_key: Optional[str]
+    cursor: RawCursor, left_key: Optional[str], right_key: Optional[str]
 ) -> str:
+    # use 1 as the initial index in tables
+    if not left_key and not right_key:
+        return "1"
+
     cursor.callproc("rational_intermediate", (left_key, right_key))
     if row := cursor.fetchone():
         return row[0]
@@ -26,38 +31,16 @@ def _rational_intermediate(
     )
 
 
-def _first(row: Optional[Row]):
-    if row:
-        return row[0]
-
-
 def _insert_node(
     db: Session,
     node: NewNode,
     *,
+    depth: int,
     after: Optional[str] = None,
     before: Optional[str] = None,
-    depth: int = 0,
 ):
-    """Insert node and its children between the indices"""
-
-    if not after:
-        # If left bound not specified, try to set it to the largest key within the allowed range
-        after = _first(
-            db.execute(
-                text(
-                    """select greatest(
-                        (select max(right_key) from tree where right_key < :before),
-                        (select max(left_key) from tree where left_key < :before)
-                    );"""
-                ),
-                {"before": before},
-            ).one_or_none()
-        )
-
     with _raw_cursor(db) as cursor:
-        # If `after` is None at this point, this means the table is empty
-        left_key = _rational_intermediate(cursor, after, before) if after else "1"
+        left_key = _rational_intermediate(cursor, after, before)
 
         next_key = left_key
         for child in node.children:
@@ -80,10 +63,49 @@ def _insert_node(
         return right_key
 
 
-def insert_tree(db: Session, root: NewNode, before: Optional[str] = None):
-    """Insert tree immediately before the given fraction"""
+def _rational_cmp(db: Session, a: str, b: str) -> int:
+    return db.execute(
+        text("SELECT rational_cmp(:a, :b)"), {"a": a, "b": b}
+    ).scalar_one()
 
-    _insert_node(db, root, before=before)
+
+def insert_tree(
+    db: Session,
+    root: NewNode,
+    *,
+    after: str,
+    before: str,
+):
+    # assert after < before
+    if _rational_cmp(db, after, before) != -1:
+        raise ValueError("'before' value must be smaller that 'after'")
+
+    if (
+        db.query(func.count())
+        .select_from(models.Node)
+        .where(and_(models.Node.left_key > after, models.Node.right_key < before))
+        .scalar()
+        != 0
+    ):
+        raise ValueError(f"Space between {before} and {after} already occupied")
+
+    parent_depth = (
+        db.query(models.Node.depth)
+        .where(and_(models.Node.left_key <= after, models.Node.right_key >= before))
+        .order_by(models.Node.left_key.desc())
+        .limit(1)
+        .scalar()
+    )
+
+    _insert_node(
+        db,
+        root,
+        after=after,
+        before=before,
+        depth=(
+            Maybe.from_optional(parent_depth).map(lambda depth: depth + 1).value_or(0)
+        ),
+    )
     db.commit()
 
 
