@@ -16,3 +16,15 @@ class NewNode(BaseModel):
     title: str
     data: Optional[dict]
     children: list[NewNode]
+
+
+class Node(BaseModel):
+    id: int
+    fraction: str
+    start_id: Optional[int]
+    depth: int
+    title: Optional[str]
+    data: Optional[dict]
+
+    class Config:
+        from_attributes = True
