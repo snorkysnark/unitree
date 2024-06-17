@@ -4,8 +4,7 @@ from pydantic import BaseModel
 
 
 class InsertTreeBody(BaseModel):
-    after: str
-    before: str
+    before_id: Optional[int] = None
     root: NewNode
 
 

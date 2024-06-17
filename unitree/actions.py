@@ -1,12 +1,13 @@
 from contextlib import contextmanager
 from typing import Optional, cast
-from sqlalchemy import Row, func, select, text, and_, not_
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, aliased
 from psycopg2.extensions import connection as RawConnection, cursor as RawCursor
-from returns.maybe import Maybe
 
 from . import models
 from .schema import NewNode
+
+Pair = aliased(models.Node)
 
 
 @contextmanager
@@ -33,81 +34,90 @@ def _rational_intermediate(
 
 def _insert_node(
     db: Session,
-    node: NewNode,
-    *,
-    depth: int,
-    after: Optional[str] = None,
-    before: Optional[str] = None,
-):
-    with _raw_cursor(db) as cursor:
-        left_key = _rational_intermediate(cursor, after, before)
-
-        next_key = left_key
-        for child in node.children:
-            next_key = _insert_node(
-                db, child, after=next_key, before=before, depth=depth + 1
-            )
-
-        right_key = _rational_intermediate(cursor, next_key, before)
-
-        db.add(
-            models.Node(
-                left_key=left_key,
-                right_key=right_key,
-                depth=depth,
-                title=node.title,
-                data=node.data,
-            )
-        )
-
-        return right_key
-
-
-def _rational_cmp(db: Session, a: str, b: str) -> int:
-    return db.execute(
-        text("SELECT rational_cmp(:a, :b)"), {"a": a, "b": b}
-    ).scalar_one()
-
-
-def insert_tree(
-    db: Session,
     root: NewNode,
     *,
-    after: str,
-    before: str,
+    depth: int,
+    after_fraction: Optional[str] = None,
+    before_fraction: Optional[str] = None,
 ):
-    # assert after < before
-    if _rational_cmp(db, after, before) != -1:
-        raise ValueError("'before' value must be smaller that 'after'")
+    with _raw_cursor(db) as cursor:
+        # if both after_fraction=None and before_fraction=None, assume table is empty
+        next_fraction = (
+            _rational_intermediate(cursor, after_fraction, before_fraction)
+            if after_fraction or before_fraction
+            else "1"
+        )
+        start_node = models.Node(
+            fraction=next_fraction, depth=depth, title=root.title, data=root.data
+        )
+        db.add(start_node)
+        db.flush()
+        db.refresh(start_node)
 
-    if (
-        db.query(func.count())
-        .select_from(models.Node)
-        .where(and_(models.Node.left_key > after, models.Node.right_key < before))
-        .scalar()
-        != 0
-    ):
-        raise ValueError(f"Space between {before} and {after} already occupied")
+        for child in root.children:
+            next_fraction = _insert_node(
+                db,
+                child,
+                depth=depth + 1,
+                after_fraction=next_fraction,
+                before_fraction=before_fraction,
+            )
 
-    parent_depth = (
-        db.query(models.Node.depth)
-        .where(and_(models.Node.left_key <= after, models.Node.right_key >= before))
-        .order_by(models.Node.left_key.desc())
-        .limit(1)
-        .scalar()
-    )
+        next_fraction = _rational_intermediate(cursor, next_fraction, before_fraction)
+        db.add(
+            models.Node(
+                fraction=next_fraction,
+                start_id=start_node.id,
+                depth=depth,
+            )
+        )
+        return next_fraction
+
+
+def insert_tree(db: Session, root: NewNode, *, before_id: Optional[int] = None):
+    before_fraction: Optional[str] = None
+    parent_depth: Optional[int] = None
+    after_fraction: Optional[str] = None
+
+    if before_id is not None:
+        before_node = db.query(models.Node).where(models.Node.id == before_id).one()
+        before_fraction = before_node.fraction
+
+        if after_node := (  # Find the preceding node (if exists)
+            db.query(models.Node)
+            .where(models.Node.fraction < before_node.fraction)
+            .order_by(models.Node.fraction.desc())
+            .limit(1)
+            .one_or_none()
+        ):
+            after_fraction = after_node.fraction
+
+            # Find the parent node: rightmost that contains the range [after_fraction; before_fraction]
+            parent_node = (
+                db.query(models.Node)
+                .join(models.Node.end.of_type(Pair))
+                .where(
+                    (models.Node.fraction <= after_node.fraction)
+                    & (Pair.fraction >= before_node.fraction)
+                )
+                .order_by(models.Node.fraction.desc())
+                .limit(1)
+                .one()
+            )
+            parent_depth = parent_node.depth
+    else:
+        # If before_id = None, we are appending to the end
+        after_fraction = db.query(func.max(models.Node.fraction)).scalar()
 
     _insert_node(
         db,
         root,
-        after=after,
-        before=before,
-        depth=(
-            Maybe.from_optional(parent_depth).map(lambda depth: depth + 1).value_or(0)
-        ),
+        depth=parent_depth + 1 if parent_depth else 0,
+        after_fraction=after_fraction,
+        before_fraction=before_fraction,
     )
     db.commit()
 
 
 def get_tree(db: Session):
-    return db.query(models.Node).order_by(models.Node.left_key).all()
+    return db.query(models.Node).order_by(models.Node.fraction).all()

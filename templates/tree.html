@@ -9,7 +9,11 @@
     <main>
       {% for node in tree %}
       <div style="margin-left: {{ node.depth * 20 }}px">
-        <b>{{ node.left_key }}</b>|{{ node.title }}|<b>{{ node.right_key }}</b>
+        ({{ node.id }}) <b>{{ node.fraction }}</b>|{% if node.start_id == None %}
+          {{ node.title }}
+        {% else %}
+          <b>END</b>
+        {% endif %}
       </div>
       {% endfor %}
     </main>

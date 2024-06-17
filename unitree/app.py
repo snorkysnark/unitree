@@ -4,9 +4,9 @@ from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
 
+from .schema import InsertTreeBody
 from .settings import settings
 from .database import SessionLocal
-from .schema import InsertTreeBody
 from . import actions
 
 
@@ -34,7 +34,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.post("/insert")
 def insert_tree(data: InsertTreeBody, db: Session = Depends(get_db)):
-    actions.insert_tree(db, data.root, after=data.after, before=data.before)
+    actions.insert_tree(db, root=data.root, before_id=data.before_id)
     return {}
 
 
