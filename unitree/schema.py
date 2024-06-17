@@ -8,6 +8,10 @@ class InsertTreeBody(BaseModel):
     data: NewNode
 
 
+class UpdateNodeBody(BaseModel):
+    move_before: Optional[int]
+
+
 class NewNode(BaseModel):
     title: str
     data: Optional[dict]

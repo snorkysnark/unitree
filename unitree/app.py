@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
 
-from .schema import InsertTreeBody
+from .schema import InsertTreeBody, UpdateNodeBody
 from .settings import settings
 from .database import SessionLocal
 from . import actions
@@ -41,6 +41,12 @@ def insert_tree(body: InsertTreeBody, db: Session = Depends(get_db)):
 @app.delete("/node/{node_id}")
 def delete_node(node_id: int, db: Session = Depends(get_db)):
     actions.delete_node(db, node_id)
+    return {}
+
+
+@app.put("/node/{node_id}")
+def update_node(node_id: int, body: UpdateNodeBody, db: Session = Depends(get_db)):
+    actions.move_node(db, node_id=node_id, move_before=body.move_before)
     return {}
 
 
