@@ -38,6 +38,12 @@ def insert_tree(data: InsertTreeBody, db: Session = Depends(get_db)):
     return {}
 
 
+@app.post("/delete")
+def delete_node(id: int, db: Session = Depends(get_db)):
+    actions.delete_node(db, id)
+    return {}
+
+
 @app.get("/")
 def tree_view(request: Request, db: Session = Depends(get_db)):
     tree = actions.get_tree(db)

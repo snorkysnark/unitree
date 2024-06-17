@@ -36,3 +36,11 @@ class Node(Base):
 
     end = relationship("Node", back_populates="start", uselist=False)
     start = relationship("Node", back_populates="end", remote_side=[id])
+
+    def get_range(self) -> tuple[str, str]:
+        is_start = self.start_id is None
+
+        if is_start:
+            return self.fraction, self.end.fraction
+        else:
+            return self.start.fraction, self.fraction

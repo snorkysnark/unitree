@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from typing import Optional, cast
-from sqlalchemy import func
+from sqlalchemy import delete, func
 from sqlalchemy.orm import Session, aliased
 from psycopg2.extensions import connection as RawConnection, cursor as RawCursor
 
@@ -115,6 +115,18 @@ def insert_tree(db: Session, root: NewNode, *, before_id: Optional[int] = None):
         depth=parent_depth + 1 if parent_depth else 0,
         after_fraction=after_fraction,
         before_fraction=before_fraction,
+    )
+    db.commit()
+
+
+def delete_node(db: Session, node_id: int):
+    node = db.query(models.Node).where(models.Node.id == node_id).limit(1).one()
+    left_key, right_key = node.get_range()
+
+    db.execute(
+        delete(models.Node).where(
+            (models.Node.fraction >= left_key) & (models.Node.fraction <= right_key)
+        )
     )
     db.commit()
 
