@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from typing import Optional, cast
-from sqlalchemy import delete, func, text, update
+from sqlalchemy import delete, func, text
 from sqlalchemy.orm import Session, aliased
 from psycopg2.extensions import connection as RawConnection, cursor as RawCursor
 from dataclasses import dataclass
