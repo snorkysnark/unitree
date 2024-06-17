@@ -36,24 +36,24 @@ templates = Jinja2Templates(directory="templates")
 add_pagination(app)
 
 
-@app.get("/tree", response_model=Page[schema.Node])
+@app.get("/api/tree", response_model=Page[schema.Node])
 def get_tree(db: Session = Depends(get_db)):
     return paginate(db, select(models.Node).order_by(models.Node.fraction))
 
 
-@app.post("/tree")
+@app.post("/api/tree")
 def insert_tree(body: InsertTreeBody, db: Session = Depends(get_db)):
     actions.insert_tree(db, root=body.data, before_id=body.insert_before)
     return {}
 
 
-@app.delete("/node/{node_id}")
+@app.delete("/api/node/{node_id}")
 def delete_node(node_id: int, db: Session = Depends(get_db)):
     actions.delete_node(db, node_id)
     return {}
 
 
-@app.put("/node/{node_id}")
+@app.put("/api/node/{node_id}")
 def update_node(node_id: int, body: UpdateNodeBody, db: Session = Depends(get_db)):
     actions.move_node(db, node_id=node_id, move_before=body.move_before)
     return {}
