@@ -32,15 +32,15 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 
-@app.post("/insert")
-def insert_tree(data: InsertTreeBody, db: Session = Depends(get_db)):
-    actions.insert_tree(db, root=data.root, before_id=data.before_id)
+@app.post("/tree")
+def insert_tree(body: InsertTreeBody, db: Session = Depends(get_db)):
+    actions.insert_tree(db, root=body.data, before_id=body.insert_before)
     return {}
 
 
-@app.post("/delete")
-def delete_node(id: int, db: Session = Depends(get_db)):
-    actions.delete_node(db, id)
+@app.delete("/node/{node_id}")
+def delete_node(node_id: int, db: Session = Depends(get_db)):
+    actions.delete_node(db, node_id)
     return {}
 
 
