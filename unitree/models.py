@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy import Column, ForeignKey, Integer, String, JSON
+from sqlalchemy.orm import mapped_column, relationship
 from sqlalchemy.types import UserDefinedType
 
 from .database import Base
@@ -26,9 +27,12 @@ class Rational(UserDefinedType):
 class Node(Base):
     __tablename__ = "tree"
 
-    id = Column(Integer, primary_key=True)
-    left_key = Column(Rational, nullable=False, index=True)
-    right_key = Column(Rational, nullable=False, index=True)
-    depth = Column(Integer, nullable=False)
-    title = Column(String)
-    data = Column(JSON)
+    id = mapped_column(Integer, primary_key=True)
+    fraction = mapped_column(Rational, nullable=False, index=True)
+    start_id = mapped_column(Integer, ForeignKey("tree.id"), index=True)
+    depth = mapped_column(Integer, nullable=False)
+    title = mapped_column(String)
+    data = mapped_column(JSON)
+
+    end = relationship("Node", back_populates="start", uselist=False)
+    start = relationship("Node", back_populates="end", remote_side=[id])
