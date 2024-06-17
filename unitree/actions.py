@@ -114,7 +114,9 @@ class InsertionRange:
             after_fraction = db.query(func.max(models.Node.fraction)).scalar()
 
         return InsertionRange(
-            before_fraction, after_fraction, parent_depth + 1 if parent_depth else 0
+            before_fraction,
+            after_fraction,
+            parent_depth + 1 if parent_depth is not None else 0,
         )
 
 
