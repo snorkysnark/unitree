@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class InsertTreeBody(BaseModel):
     insert_before: Optional[int] = None
-    data: NewNode
+    data: list[NewNode]
 
 
 class UpdateNodeBody(BaseModel):

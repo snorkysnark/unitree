@@ -43,7 +43,7 @@ def get_tree(db: Session = Depends(get_db)):
 
 @app.post("/api/tree")
 def insert_tree(body: InsertTreeBody, db: Session = Depends(get_db)):
-    actions.insert_tree(db, root=body.data, before_id=body.insert_before)
+    actions.insert_trees(db, trees=body.data, before_id=body.insert_before)
     return {}
 
 

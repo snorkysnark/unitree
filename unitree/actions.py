@@ -118,16 +118,18 @@ class InsertionRange:
         )
 
 
-def insert_tree(db: Session, root: NewNode, *, before_id: Optional[int] = None):
+def insert_trees(db: Session, trees: list[NewNode], *, before_id: Optional[int] = None):
     location = InsertionRange.create_before(db, before_id)
 
-    _insert_node(
-        db,
-        root,
-        depth=location.depth,
-        after_fraction=location.after_fraction,
-        before_fraction=location.before_fraction,
-    )
+    next_fraction = location.after_fraction
+    for root in trees:
+        next_fraction = _insert_node(
+            db,
+            root,
+            depth=location.depth,
+            after_fraction=next_fraction,
+            before_fraction=location.before_fraction,
+        )
     db.commit()
 
 
