@@ -168,7 +168,7 @@ def move_node(db: Session, *, node_id: int, move_before: Optional[int] = None):
             node.fraction = next_fraction
             node.depth += delta_depth
 
-    db.commit
+    db.commit()
 
 
 def delete_node(db: Session, node_id: int):
