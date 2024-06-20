@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, JSON
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import mapped_column, relationship
 from sqlalchemy.types import UserDefinedType
 
@@ -32,7 +32,6 @@ class Node(Base):
     start_id = mapped_column(Integer, ForeignKey("tree.id"), index=True)
     depth = mapped_column(Integer, nullable=False)
     title = mapped_column(String)
-    data = mapped_column(JSON)
 
     end = relationship("Node", back_populates="start", uselist=False)
     start = relationship("Node", back_populates="end", remote_side=[id])

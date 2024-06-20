@@ -44,9 +44,7 @@ def _insert_node(
     with _raw_cursor(db) as cursor:
         next_fraction = _rational_intermediate(cursor, after_fraction, before_fraction)
 
-        start_node = models.Node(
-            fraction=next_fraction, depth=depth, title=root.title, data=root.data
-        )
+        start_node = models.Node(fraction=next_fraction, depth=depth, title=root.title)
         db.add(start_node)
         db.flush()
         db.refresh(start_node)
