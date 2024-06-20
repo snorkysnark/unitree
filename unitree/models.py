@@ -28,8 +28,8 @@ class Node(Base):
     __tablename__ = "tree"
 
     id = mapped_column(Integer, primary_key=True)
-    fraction = mapped_column(Rational, nullable=False, index=True)
-    start_id = mapped_column(Integer, ForeignKey("tree.id"), index=True)
+    fraction = mapped_column(Rational, nullable=False, index=True, unique=True)
+    start_id = mapped_column(Integer, ForeignKey("tree.id"), index=True, unique=True)
     depth = mapped_column(Integer, nullable=False)
     title = mapped_column(String)
 
