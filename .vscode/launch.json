@@ -9,10 +9,19 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "unitree.app:app"
-            ],
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            ]
+        },
+        {
+            "name": "populate",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/populate.py",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--max-depth=6",
+                "--max-children=4",
+                "--min-children=4"
+            ]
         }
     ]
 }
