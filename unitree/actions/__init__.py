@@ -1,13 +1,18 @@
-from typing import Optional
+from typing import Iterator, Optional
 from sqlalchemy import delete, func
 from sqlalchemy.orm import Session, aliased
 from dataclasses import dataclass
 
 from unitree.models import Node
 from unitree.schema import NodeIn
-from .lexorank import get_rank_between
+from .lexorank import get_ranks_between
 
 Pair = aliased(Node)
+
+
+def _get_tree_length(tree: NodeIn) -> int:
+    # A single NodeIn is counted as 2 nodes, since it gets turned into a START and an END node
+    return 2 + sum(map(_get_tree_length, tree.children))
 
 
 def _insert_node(
@@ -15,34 +20,28 @@ def _insert_node(
     root: NodeIn,
     *,
     depth: int,
-    after_rank: Optional[str] = None,
-    before_rank: Optional[str] = None,
+    ranks: Iterator[str],
 ):
-    next_rank = get_rank_between(after_rank, before_rank)
-
-    start_node = Node(rank=next_rank, depth=depth, title=root.title)
+    start_node = Node(rank=next(ranks), depth=depth, title=root.title)
     db.add(start_node)
     db.flush()
     db.refresh(start_node)
 
     for child in root.children:
-        next_rank = _insert_node(
+        _insert_node(
             db,
             child,
             depth=depth + 1,
-            after_rank=next_rank,
-            before_rank=before_rank,
+            ranks=ranks,
         )
 
-    next_rank = get_rank_between(next_rank, before_rank)
     db.add(
         Node(
-            rank=next_rank,
+            rank=next(ranks),
             start_id=start_node.id,
             depth=depth,
         )
     )
-    return next_rank
 
 
 @dataclass
@@ -95,14 +94,11 @@ class InsertionRange:
 
 def insert_tree(db: Session, tree: NodeIn, *, before_id: Optional[int] = None):
     location = InsertionRange.create_before(db, before_id)
-
-    _insert_node(
-        db,
-        tree,
-        depth=location.depth,
-        after_rank=location.after_rank,
-        before_rank=location.before_rank,
+    ranks = get_ranks_between(
+        location.after_rank, location.before_rank, n=_get_tree_length(tree)
     )
+
+    _insert_node(db, tree, depth=location.depth, ranks=ranks)
     db.commit()
 
 
@@ -121,16 +117,18 @@ def move_node(db: Session, *, node_id: int, move_before: Optional[int] = None):
         raise ValueError("Tried to move node inside of itself")
 
     delta_depth: int = move_location.depth - node.depth
-    next_rank = move_location.after_rank
 
-    for node in (
+    nodes = (
         db.query(Node)
         .where((Node.rank >= left_key) & (Node.rank <= right_key))
         .order_by(Node.rank)
-    ):
-        next_rank = get_rank_between(next_rank, move_location.before_rank)
+    )
+    ranks = get_ranks_between(
+        move_location.after_rank, move_location.before_rank, n=nodes.count()
+    )
 
-        node.rank = next_rank
+    for node in nodes:
+        node.rank = next(ranks)
         node.depth += delta_depth
 
     db.commit()
