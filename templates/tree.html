@@ -9,7 +9,7 @@
     <main>
       {% for node in tree %}
       <div style="margin-left: {{ node.depth * 20 }}px">
-        ({{ node.id }}) <b>{{ node.fraction }}</b>|{% if node.start_id == None %}
+        ({{ node.id }}) <b>{{ node.rank }}</b>|{% if node.start_id == None %}
           {{ node.title }}
         {% else %}
           <b>END</b>

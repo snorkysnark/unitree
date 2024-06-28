@@ -10,7 +10,7 @@ from sqlalchemy import select, func
 from unitree.database import SessionLocal
 from unitree.schema import NewNode
 from unitree.models import Node
-from unitree.actions import insert_trees
+from unitree.actions import insert_tree
 
 
 def generate_tree(
@@ -54,10 +54,9 @@ def main(
             .offset(math.floor(random.random() * (total_count + 1)))
             .limit(1)
         ).scalar()
-        random_id = 7478
         print("Insert before", random_id)
 
-        insert_trees(db, [root], before_id=random_id)
+        insert_tree(db, root, before_id=random_id)
 
 
 if __name__ == "__main__":

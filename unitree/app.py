@@ -36,14 +36,14 @@ templates = Jinja2Templates(directory="templates")
 add_pagination(app)
 
 
-@app.get("/api/tree", response_model=Page[schema.Node])
+@app.get("/api/tree", response_model=list[schema.Node])
 def get_tree(db: Session = Depends(get_db)):
-    return paginate(db, select(models.Node).order_by(models.Node.fraction))
+    return actions.get_tree(db)
 
 
 @app.post("/api/tree")
 def insert_tree(body: InsertTreeBody, db: Session = Depends(get_db)):
-    actions.insert_trees(db, trees=body.data, before_id=body.insert_before)
+    actions.insert_tree(db, body.data, before_id=body.insert_before)
     return {}
 
 
