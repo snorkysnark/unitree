@@ -143,4 +143,4 @@ def delete_node(db: Session, node_id: int):
 
 
 def get_tree(db: Session):
-    return db.query(Node).order_by(Node.rank).all()
+    return db.query(Node).order_by(Node.rank)
