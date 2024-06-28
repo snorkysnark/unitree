@@ -8,7 +8,7 @@ import pprint
 from sqlalchemy import select, func
 
 from unitree.database import SessionLocal
-from unitree.schema import NewNode
+from unitree.schema import NodeIn
 from unitree.models import Node
 from unitree.actions import insert_tree
 
@@ -16,7 +16,7 @@ from unitree.actions import insert_tree
 def generate_tree(
     max_depth: int, min_children: int, max_children: int, current_depth: int = 0
 ):
-    node = NewNode(title=randomname.get_name(), children=[])
+    node = NodeIn(title=randomname.get_name(), children=[])
 
     if current_depth < max_depth:
         num_children = random.randint(min_children, max_children)

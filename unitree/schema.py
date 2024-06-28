@@ -5,19 +5,19 @@ from pydantic import BaseModel
 
 class InsertTreeBody(BaseModel):
     insert_before: Optional[int] = None
-    data: NewNode
+    data: NodeIn
 
 
 class UpdateNodeBody(BaseModel):
     move_before: Optional[int]
 
 
-class NewNode(BaseModel):
+class NodeIn(BaseModel):
     title: str
-    children: list[NewNode]
+    children: list[NodeIn]
 
 
-class Node(BaseModel):
+class NodeOut(BaseModel):
     id: int
     rank: str
     start_id: Optional[int]

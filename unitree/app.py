@@ -1,16 +1,14 @@
 from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI, Request
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
-from fastapi_pagination import Page, add_pagination
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import add_pagination
 
-from .schema import InsertTreeBody, UpdateNodeBody
+from .schema import InsertTreeBody, UpdateNodeBody, NodeOut
 from .settings import settings
 from .database import SessionLocal
-from . import actions, models, schema
+from . import actions
 
 
 def run_migrations(alembic_path: str, database_url: str):
@@ -36,7 +34,7 @@ templates = Jinja2Templates(directory="templates")
 add_pagination(app)
 
 
-@app.get("/api/tree", response_model=list[schema.Node])
+@app.get("/api/tree", response_model=list[NodeOut])
 def get_tree(db: Session = Depends(get_db)):
     return actions.get_tree(db)
 

@@ -3,16 +3,16 @@ from sqlalchemy import delete, func
 from sqlalchemy.orm import Session, aliased
 from dataclasses import dataclass
 
-from unitree import models
-from unitree.schema import NewNode
+from unitree.models import Node
+from unitree.schema import NodeIn
 from .lexorank import get_rank_between
 
-Pair = aliased(models.Node)
+Pair = aliased(Node)
 
 
 def _insert_node(
     db: Session,
-    root: NewNode,
+    root: NodeIn,
     *,
     depth: int,
     after_rank: Optional[str] = None,
@@ -20,7 +20,7 @@ def _insert_node(
 ):
     next_rank = get_rank_between(after_rank, before_rank)
 
-    start_node = models.Node(rank=next_rank, depth=depth, title=root.title)
+    start_node = Node(rank=next_rank, depth=depth, title=root.title)
     db.add(start_node)
     db.flush()
     db.refresh(start_node)
@@ -36,7 +36,7 @@ def _insert_node(
 
     next_rank = get_rank_between(next_rank, before_rank)
     db.add(
-        models.Node(
+        Node(
             rank=next_rank,
             start_id=start_node.id,
             depth=depth,
@@ -58,13 +58,13 @@ class InsertionRange:
         parent_depth: Optional[int] = None
 
         if node_id is not None:
-            before_node = db.query(models.Node).where(models.Node.id == node_id).one()
+            before_node = db.query(Node).where(Node.id == node_id).one()
             before_rank = before_node.rank
 
             if after_node := (  # Find the preceding node (if exists)
-                db.query(models.Node)
-                .where(models.Node.rank < before_node.rank)
-                .order_by(models.Node.rank.desc())
+                db.query(Node)
+                .where(Node.rank < before_node.rank)
+                .order_by(Node.rank.desc())
                 .limit(1)
                 .one_or_none()
             ):
@@ -72,20 +72,19 @@ class InsertionRange:
 
                 # Find the parent node: rightmost that contains the range [after_rank; before_rank]
                 parent_node = (
-                    db.query(models.Node)
-                    .join(models.Node.end.of_type(Pair))
+                    db.query(Node)
+                    .join(Node.end.of_type(Pair))
                     .where(
-                        (models.Node.rank <= after_node.rank)
-                        & (Pair.rank >= before_node.rank)
+                        (Node.rank <= after_node.rank) & (Pair.rank >= before_node.rank)
                     )
-                    .order_by(models.Node.rank.desc())
+                    .order_by(Node.rank.desc())
                     .limit(1)
                     .one()
                 )
                 parent_depth = parent_node.depth
         else:
             # If before_id = None, we are appending to the end
-            after_rank = db.query(func.max(models.Node.rank)).scalar()
+            after_rank = db.query(func.max(Node.rank)).scalar()
 
         return InsertionRange(
             before_rank,
@@ -94,7 +93,7 @@ class InsertionRange:
         )
 
 
-def insert_tree(db: Session, tree: NewNode, *, before_id: Optional[int] = None):
+def insert_tree(db: Session, tree: NodeIn, *, before_id: Optional[int] = None):
     location = InsertionRange.create_before(db, before_id)
 
     _insert_node(
@@ -108,7 +107,7 @@ def insert_tree(db: Session, tree: NewNode, *, before_id: Optional[int] = None):
 
 
 def move_node(db: Session, *, node_id: int, move_before: Optional[int] = None):
-    node = db.query(models.Node).where(models.Node.id == node_id).limit(1).one()
+    node = db.query(Node).where(Node.id == node_id).limit(1).one()
     left_key, right_key = node.get_range()
     move_location = InsertionRange.create_before(db, move_before)
 
@@ -125,9 +124,9 @@ def move_node(db: Session, *, node_id: int, move_before: Optional[int] = None):
     next_rank = move_location.after_rank
 
     for node in (
-        db.query(models.Node)
-        .where((models.Node.rank >= left_key) & (models.Node.rank <= right_key))
-        .order_by(models.Node.rank)
+        db.query(Node)
+        .where((Node.rank >= left_key) & (Node.rank <= right_key))
+        .order_by(Node.rank)
     ):
         next_rank = get_rank_between(next_rank, move_location.before_rank)
 
@@ -139,19 +138,11 @@ def move_node(db: Session, *, node_id: int, move_before: Optional[int] = None):
 
 def delete_node(db: Session, node_id: int):
     left_key, right_key = (
-        db.query(models.Node)
-        .where(models.Node.id == node_id)
-        .limit(1)
-        .one()
-        .get_range()
+        db.query(Node).where(Node.id == node_id).limit(1).one().get_range()
     )
-    db.execute(
-        delete(models.Node).where(
-            (models.Node.rank >= left_key) & (models.Node.rank <= right_key)
-        )
-    )
+    db.execute(delete(Node).where((Node.rank >= left_key) & (Node.rank <= right_key)))
     db.commit()
 
 
 def get_tree(db: Session):
-    return db.query(models.Node).order_by(models.Node.rank).all()
+    return db.query(Node).order_by(Node.rank).all()
