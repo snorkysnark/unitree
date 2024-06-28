@@ -1,3 +1,4 @@
+from typing import Optional
 from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI, Request
@@ -5,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
 from fastapi_pagination import add_pagination
 
-from .schema import InsertTreeBody, UpdateNodeBody, NodeOut
+from .schema import NodeIn, NodeOut
 from .settings import settings
 from .database import SessionLocal
 from . import actions
@@ -40,8 +41,10 @@ def get_tree(db: Session = Depends(get_db)):
 
 
 @app.post("/api/tree")
-def insert_tree(body: InsertTreeBody, db: Session = Depends(get_db)):
-    actions.insert_tree(db, body.data, before_id=body.insert_before)
+def insert_tree(
+    data: NodeIn, insert_before: Optional[int] = None, db: Session = Depends(get_db)
+):
+    actions.insert_tree(db, data, before_id=insert_before)
     return {}
 
 
@@ -52,8 +55,10 @@ def delete_node(node_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/api/node/{node_id}")
-def update_node(node_id: int, body: UpdateNodeBody, db: Session = Depends(get_db)):
-    actions.move_node(db, node_id=node_id, move_before=body.move_before)
+def update_node(
+    node_id: int, move_before: Optional[int], db: Session = Depends(get_db)
+):
+    actions.move_node(db, node_id=node_id, move_before=move_before)
     return {}
 
 
