@@ -94,12 +94,13 @@ class InsertionRange:
 
 def insert_tree(db: Session, tree: NodeIn, *, before_id: Optional[int] = None):
     location = InsertionRange.create_before(db, before_id)
-    ranks = get_ranks_between(
-        location.after_rank, location.before_rank, n=_get_tree_length(tree)
-    )
+    length = _get_tree_length(tree)
+    ranks = get_ranks_between(location.after_rank, location.before_rank, n=length)
 
     _insert_node(db, tree, depth=location.depth, ranks=ranks)
     db.commit()
+
+    return length
 
 
 def move_node(db: Session, *, node_id: int, move_before: Optional[int] = None):

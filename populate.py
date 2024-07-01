@@ -36,27 +36,28 @@ def main(
     max_depth: Annotated[int, typer.Option()],
     max_children: Annotated[int, typer.Option()],
     min_children: Annotated[int, typer.Option()] = 0,
+    repeat: Annotated[int, typer.Option()] = 1,
 ):
     with SessionLocal() as db:
         total_count = db.execute(select(func.count()).select_from(Node)).scalar() or 0
-        print("Total count", total_count)
 
-        root = generate_tree(
-            max_depth=max_depth,
-            min_children=min_children,
-            max_children=max_children,
-        )
-        pprint.pprint(root.model_dump())
+        for _ in range(repeat):
+            root = generate_tree(
+                max_depth=max_depth,
+                min_children=min_children,
+                max_children=max_children,
+            )
+            pprint.pprint(root.model_dump())
 
-        # select random id or null
-        random_id = db.execute(
-            select(Node.id)
-            .offset(math.floor(random.random() * (total_count + 1)))
-            .limit(1)
-        ).scalar()
-        print("Insert before", random_id)
+            # select random id or null
+            random_id = db.execute(
+                select(Node.id)
+                .offset(math.floor(random.random() * (total_count + 1)))
+                .limit(1)
+            ).scalar()
+            print("Insert before", random_id)
 
-        insert_tree(db, root, before_id=random_id)
+            total_count += insert_tree(db, root, before_id=random_id)
 
 
 if __name__ == "__main__":
