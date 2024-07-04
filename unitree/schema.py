@@ -11,7 +11,6 @@ class NodeIn(BaseModel):
 class NodeOut(BaseModel):
     id: int
     rank: str
-    start_id: Optional[int]
     depth: int
     title: Optional[str]
 

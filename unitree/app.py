@@ -1,12 +1,12 @@
 from typing import Optional
 from alembic.config import Config as AlembicConfig
 import alembic.command
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
-from fastapi.templating import Jinja2Templates
 from fastapi_pagination import add_pagination, LimitOffsetPage
 from fastapi_pagination.ext.sqlalchemy import paginate
 
+from .models import Node
 from .schema import NodeIn, NodeOut
 from .settings import settings
 from .database import SessionLocal
@@ -32,13 +32,12 @@ def get_db():
 
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
 add_pagination(app)
 
 
 @app.get("/api/tree", response_model=LimitOffsetPage[NodeOut])
 def get_tree(db: Session = Depends(get_db)):
-    return paginate(actions.get_tree(db))
+    return paginate(db.query(Node).where(Node.start_id == None).order_by(Node.rank))
 
 
 @app.post("/api/tree")
@@ -61,11 +60,3 @@ def update_node(
 ):
     actions.move_node(db, node_id=node_id, move_before=move_before)
     return {}
-
-
-@app.get("/")
-def tree_view(request: Request, db: Session = Depends(get_db)):
-    tree = actions.get_tree(db)
-    return templates.TemplateResponse(
-        request=request, name="tree.html", context={"tree": tree}
-    )

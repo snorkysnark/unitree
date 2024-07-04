@@ -1,11 +1,11 @@
-import { useQuery } from "react-query";
+import { TreePaginated } from "./treeview";
 
 function App() {
-  const page1 = useQuery(["tree", 1], () =>
-    fetch("/api/tree?size=50&page=1").then((result) => result.json())
+  return (
+    <div className="h-svh p-4">
+      <TreePaginated />
+    </div>
   );
-
-  return <></>;
 }
 
 export default App;
