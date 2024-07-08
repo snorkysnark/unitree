@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Optional
 from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI
@@ -33,14 +33,14 @@ app = FastAPI()
 
 
 @app.get("/api/tree", response_model=list[NodeOut])
-def get_tree(limit: int | Literal["all"], offset: int, db: Session = Depends(get_db)):
-    query = (
-        db.query(Node).where(Node.start_id == None).order_by(Node.rank).offset(offset)
+def get_tree(limit: int, offset: int, db: Session = Depends(get_db)):
+    return (
+        db.query(Node)
+        .where(Node.start_id == None)
+        .order_by(Node.rank)
+        .limit(limit)
+        .offset(offset)
     )
-    if limit != "all":
-        query = query.limit(limit)
-
-    return query
 
 
 @app.get("/api/tree/count")

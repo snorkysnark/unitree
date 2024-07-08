@@ -23,7 +23,7 @@ export type ValidationError = {
 };
 
 export type GetTreeApiTreeGetData = {
-    limit: number | 'all';
+    limit: number;
     offset: number;
 };
 

@@ -31,7 +31,7 @@ function IconButton({ children, ...rest }: Parameters<typeof Button>[0]) {
 export default function TreePaginated() {
   const [limitOption, setLimitOption] = useState("100");
 
-  const limit = +limitOption;
+  const [limit, setLimit] = useState(100);
   const [offset, setOffset] = useState(0);
 
   const queryClient = useQueryClient();
@@ -58,6 +58,17 @@ export default function TreePaginated() {
     enabled: false,
     queryFn: getCountApiTreeCountGet,
   });
+
+  // For limit=All, fetch the count
+  useEffect(() => {
+    if (limitOption === "all") {
+      refetchCount().then((result) => {
+        if (result.data !== undefined) setLimit(result.data);
+      });
+    } else {
+      setLimit(+limitOption);
+    }
+  }, [limitOption]);
 
   useEffect(() => {
     // If on last page, we can compute count without query
@@ -96,6 +107,7 @@ export default function TreePaginated() {
               <SelectItem value="200">200</SelectItem>
               <SelectItem value="500">500</SelectItem>
               <SelectItem value="1000">1000</SelectItem>
+              <SelectItem value="all">All</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -118,8 +130,10 @@ export default function TreePaginated() {
         <IconButton
           disabled={!tree?.hasNextPage}
           onClick={async () => {
-            let theCount = count ?? (await refetchCount()).data!;
-            setOffset(Math.max(0, theCount - limit));
+            let theCount = count ?? (await refetchCount()).data;
+            if (theCount !== undefined) {
+              setOffset(Math.max(0, theCount - limit));
+            }
           }}
         >
           <ChevronLast />
