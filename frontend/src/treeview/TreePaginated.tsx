@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ChevronFirst,
   ChevronLast,
+  Infinity,
 } from "lucide-react";
 import { Button } from "@/shadcn/ui/button";
 import {
@@ -16,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shadcn/ui/select";
+import { Input } from "@/shadcn/ui/input";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCountApiTreeCountGet, getTreeApiTreeGet } from "@/client";
 import TreeView from "./TreeView";
+import { Separator } from "@/shadcn/ui/separator";
 
 function IconButton({ children, ...rest }: Parameters<typeof Button>[0]) {
   return (
@@ -36,11 +39,19 @@ export default function TreePaginated() {
 
   const queryClient = useQueryClient();
 
+  const [minDepth, setMinDepth] = useState(0);
+  const [maxDepth, setMaxDepth] = useState<number | null>(null);
+
   const { data: tree } = useQuery({
-    queryKey: ["tree", limit, offset],
+    queryKey: ["tree", limit, offset, minDepth, maxDepth],
     queryFn: () => {
       // query 1 extra item to check if next page exists
-      return getTreeApiTreeGet({ limit: limit + 1, offset });
+      return getTreeApiTreeGet({
+        limit: limit + 1,
+        offset,
+        minDepth,
+        maxDepth: maxDepth ?? undefined,
+      });
     },
     select: (items) => {
       let hasNextPage = false;
@@ -80,7 +91,7 @@ export default function TreePaginated() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-scroll">
-        {tree && <TreeView nodes={tree.items} />}
+        {tree && <TreeView nodes={tree.items} startingDepth={minDepth} />}
       </div>
       <div className="flex-shrink-0 flex-grow-0 p-2 flex items-center select-none">
         <IconButton disabled={offset === 0} onClick={() => setOffset(0)}>
@@ -138,6 +149,28 @@ export default function TreePaginated() {
         >
           <ChevronLast />
         </IconButton>
+        <Separator orientation="vertical" className="mx-2" />
+        <span className="m-1">Depth:</span>
+        <Input
+          type="number"
+          className="w-16"
+          value={minDepth}
+          onChange={(e) => {
+            const value = e.target.valueAsNumber;
+            setMinDepth(Number.isNaN(value) ? 0 : Math.max(0, value));
+          }}
+        />
+        <span className="m-1">-</span>
+        <Input
+          type="number"
+          placeholder="∞"
+          className="w-16"
+          value={maxDepth ?? ""}
+          onChange={(e) => {
+            const value = e.target.valueAsNumber;
+            setMaxDepth(Number.isNaN(value) ? null : Math.max(0, value));
+          }}
+        />
       </div>
     </div>
   );

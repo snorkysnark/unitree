@@ -24,6 +24,8 @@ export type ValidationError = {
 
 export type GetTreeApiTreeGetData = {
     limit: number;
+    maxDepth?: number | null;
+    minDepth?: number;
     offset: number;
 };
 

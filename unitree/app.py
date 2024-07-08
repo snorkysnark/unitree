@@ -33,14 +33,18 @@ app = FastAPI()
 
 
 @app.get("/api/tree", response_model=list[NodeOut])
-def get_tree(limit: int, offset: int, db: Session = Depends(get_db)):
-    return (
-        db.query(Node)
-        .where(Node.start_id == None)
-        .order_by(Node.rank)
-        .limit(limit)
-        .offset(offset)
-    )
+def get_tree(
+    limit: int,
+    offset: int,
+    minDepth: int = 0,
+    maxDepth: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Node).where((Node.start_id == None) & (Node.depth >= minDepth))
+    if maxDepth is not None:
+        query = query.where(Node.depth <= maxDepth)
+
+    return query.order_by(Node.rank).limit(limit).offset(offset)
 
 
 @app.get("/api/tree/count")

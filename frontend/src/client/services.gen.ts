@@ -10,6 +10,8 @@ import type { GetTreeApiTreeGetData, GetTreeApiTreeGetResponse, InsertTreeApiTre
  * @param data The data for the request.
  * @param data.limit
  * @param data.offset
+ * @param data.minDepth
+ * @param data.maxDepth
  * @returns NodeOut Successful Response
  * @throws ApiError
  */
@@ -18,7 +20,9 @@ export const getTreeApiTreeGet = (data: GetTreeApiTreeGetData): CancelablePromis
     url: '/api/tree',
     query: {
         limit: data.limit,
-        offset: data.offset
+        offset: data.offset,
+        minDepth: data.minDepth,
+        maxDepth: data.maxDepth
     },
     errors: {
         422: 'Validation Error'

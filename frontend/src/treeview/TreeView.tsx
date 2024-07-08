@@ -31,10 +31,10 @@ function* createIndentLinesAtDepth(
   return maxDepth;
 }
 
-function createIndentLines(nodes: NodeOut[]) {
+function createIndentLines(nodes: NodeOut[], startingDepth: number = 1) {
   const lines: IndentLine[] = [];
 
-  const linesGen = createIndentLinesAtDepth(nodes, 0);
+  const linesGen = createIndentLinesAtDepth(nodes, startingDepth);
   let current = linesGen.next();
   while (!current.done) {
     lines.push(current.value);
@@ -42,23 +42,28 @@ function createIndentLines(nodes: NodeOut[]) {
   }
   const maxDepth = current.value;
 
-  for (let depth = 1; depth <= maxDepth; depth++) {
+  for (let depth = startingDepth + 1; depth <= maxDepth; depth++) {
     lines.push(...createIndentLinesAtDepth(nodes, depth));
   }
 
   return lines;
 }
 
-export default function TreeView({ nodes }: { nodes: NodeOut[] }) {
-  const indentLines = useMemo(() => createIndentLines(nodes), [nodes]);
-  console.log(indentLines);
+export default function TreeView({
+  nodes,
+  startingDepth = 0,
+}: {
+  nodes: NodeOut[];
+  startingDepth?: number;
+}) {
+  const indentLines = createIndentLines(nodes, startingDepth);
 
   return (
     <div className="relative">
       {nodes.map((node) => (
         <div
           key={node.id}
-          style={{ marginLeft: `${node.depth * 2}rem` }}
+          style={{ marginLeft: `${(node.depth - startingDepth) * 2}rem` }}
           className="hover:bg-gray-100 h-8 px-2 align-middle select-none text-nowrap"
         >
           {node.title}
@@ -70,7 +75,7 @@ export default function TreeView({ nodes }: { nodes: NodeOut[] }) {
           key={i}
           style={{
             top: `${line.row * 2}rem`,
-            left: `${line.depth * 2 + 1}rem`,
+            left: `${(line.depth - startingDepth) * 2 + 1}rem`,
             height: `${line.length * 2}rem`,
           }}
           className="absolute border-solid, border-2 border-l-gray-400"
