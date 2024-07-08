@@ -38,7 +38,19 @@ export default function TreePaginated() {
 
   const { data: tree } = useQuery({
     queryKey: ["tree", limit, offset],
-    queryFn: () => getTreeApiTreeGet({ limit, offset }),
+    queryFn: () => {
+      // query 1 extra item to check if next page exists
+      return getTreeApiTreeGet({ limit: limit + 1, offset });
+    },
+    select: (items) => {
+      let hasNextPage = false;
+      if (items.length > limit) {
+        items = items.slice(0, limit);
+        hasNextPage = true;
+      }
+
+      return { items, hasNextPage };
+    },
   });
   const { data: count, refetch: refetchCount } = useQuery({
     queryKey: ["count"],
@@ -48,24 +60,18 @@ export default function TreePaginated() {
   });
 
   useEffect(() => {
-    if (!tree) return;
-
-    // Infer that we are on the last page and update total count
-    if (count === undefined && tree.length < limit) {
-      queryClient.setQueriesData({ queryKey: ["count"] }, offset + tree.length);
-    }
-    // Go back if we went beyond the last page
-    if (offset > 0 && tree.length === 0) {
-      setOffset(Math.max(0, offset - limit));
+    // If on last page, we can compute count without query
+    if (tree && !tree.hasNextPage && count === undefined) {
+      queryClient.setQueryData(["count"], offset + tree.items.length);
     }
   }, [tree]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-scroll">
-        {tree && <TreeView nodes={tree} />}
+        {tree && <TreeView nodes={tree.items} />}
       </div>
-      <div className="flex-shrink-0 flex-grow-0 p-2 flex items-center">
+      <div className="flex-shrink-0 flex-grow-0 p-2 flex items-center select-none">
         <IconButton disabled={offset === 0} onClick={() => setOffset(0)}>
           <ChevronFirst />
         </IconButton>
@@ -90,7 +96,6 @@ export default function TreePaginated() {
               <SelectItem value="200">200</SelectItem>
               <SelectItem value="500">500</SelectItem>
               <SelectItem value="1000">1000</SelectItem>
-              <SelectItem value="38829">38829</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -99,7 +104,7 @@ export default function TreePaginated() {
           {count ?? "COUNT"}
         </Button>
         <IconButton
-          disabled={count !== undefined && offset + limit >= count}
+          disabled={!tree?.hasNextPage}
           onClick={() => {
             let nextOffset = offset + limit;
             if (count !== undefined)
@@ -111,7 +116,7 @@ export default function TreePaginated() {
           <ChevronRight />
         </IconButton>
         <IconButton
-          disabled={count !== undefined && offset + limit >= count}
+          disabled={!tree?.hasNextPage}
           onClick={async () => {
             let theCount = count ?? (await refetchCount()).data!;
             setOffset(Math.max(0, theCount - limit));
