@@ -141,7 +141,3 @@ def delete_node(db: Session, node_id: int):
     )
     db.execute(delete(Node).where((Node.rank >= left_key) & (Node.rank <= right_key)))
     db.commit()
-
-
-def get_tree(db: Session):
-    return db.query(Node).order_by(Node.rank)

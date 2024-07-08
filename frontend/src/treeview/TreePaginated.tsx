@@ -1,86 +1,125 @@
-import { useEffect, useState } from "react";
-import { useMeasure } from "@react-hookz/web";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
+
 import {
-  ApiError,
-  LimitOffsetPage_NodeOut_,
-  getTreeApiTreeGet,
-} from "@/client";
+  ChevronLeft,
+  ChevronRight,
+  ChevronFirst,
+  ChevronLast,
+} from "lucide-react";
+import { Button } from "@/shadcn/ui/button";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/shadcn/ui/pagination";
-import { ApiErrorCard, Centered, Spinner } from "@/misc";
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectLabel,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shadcn/ui/select";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getCountApiTreeCountGet, getTreeApiTreeGet } from "@/client";
 import TreeView from "./TreeView";
 
+function IconButton({ children, ...rest }: Parameters<typeof Button>[0]) {
+  return (
+    <Button variant="outline" size="icon" {...rest}>
+      {children}
+    </Button>
+  );
+}
+
 export default function TreePaginated() {
+  const [limitOption, setLimitOption] = useState("100");
+
+  const limit = +limitOption;
   const [offset, setOffset] = useState(0);
-  const [measures, ref] = useMeasure<HTMLDivElement>();
-  const [pageSize, setPageSize] = useState<number | null>(null);
 
-  // Update page size when element resized
-  useEffect(() => {
-    if (measures) {
-      const rem = parseFloat(
-        getComputedStyle(document.documentElement).fontSize
-      );
+  const queryClient = useQueryClient();
 
-      setPageSize(Math.floor(measures.height / (2 * rem)));
-    }
-  }, [measures]);
-
-  const treeQuery = useQuery<LimitOffsetPage_NodeOut_, ApiError>({
-    queryKey: ["tree", pageSize, offset],
-    enabled: !!pageSize,
-    queryFn: () => getTreeApiTreeGet({ limit: pageSize!, offset }),
+  const { data: tree } = useQuery({
+    queryKey: ["tree", limit, offset],
+    queryFn: () => getTreeApiTreeGet({ limit, offset }),
+  });
+  const { data: count, refetch: refetchCount } = useQuery({
+    queryKey: ["count"],
+    refetchOnWindowFocus: false,
+    enabled: false,
+    queryFn: getCountApiTreeCountGet,
   });
 
+  useEffect(() => {
+    if (!tree) return;
+
+    // Infer that we are on the last page and update total count
+    if (count === undefined && tree.length < limit) {
+      queryClient.setQueriesData({ queryKey: ["count"] }, offset + tree.length);
+    }
+    // Go back if we went beyond the last page
+    if (offset > 0 && tree.length === 0) {
+      setOffset(Math.max(0, offset - limit));
+    }
+  }, [tree]);
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-hidden" ref={ref}>
-        {treeQuery.isLoading && (
-          <Centered>
-            <Spinner />
-          </Centered>
-        )}
-        {treeQuery.error && (
-          <Centered>
-            <ApiErrorCard error={treeQuery.error} />
-          </Centered>
-        )}
-        {treeQuery.data && <TreeView nodes={treeQuery.data.items} />}
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-scroll">
+        {tree && <TreeView nodes={tree} />}
       </div>
-      <Pagination className="min-h-8">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              className="cursor-pointer"
-              onClick={() => {
-                if (pageSize) setOffset(Math.max(0, offset - pageSize));
-              }}
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext
-              className="cursor-pointer"
-              onClick={() => {
-                if (treeQuery.data && pageSize)
-                  setOffset(
-                    Math.min(
-                      treeQuery.data.total! - pageSize,
-                      offset + pageSize
-                    )
-                  );
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      <div className="flex-shrink-0 flex-grow-0 p-2 flex items-center">
+        <IconButton disabled={offset === 0} onClick={() => setOffset(0)}>
+          <ChevronFirst />
+        </IconButton>
+        <IconButton
+          disabled={offset === 0}
+          onClick={() => setOffset(Math.max(0, offset - limit))}
+        >
+          <ChevronLeft />
+        </IconButton>
+        <Select value={limitOption} onValueChange={setLimitOption}>
+          <SelectTrigger className="w-auto inline-flex">
+            <SelectValue asChild>
+              <span>
+                {offset}-{offset + limit}
+              </span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Page Size</SelectLabel>
+              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="200">200</SelectItem>
+              <SelectItem value="500">500</SelectItem>
+              <SelectItem value="1000">1000</SelectItem>
+              <SelectItem value="38829">38829</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <span className="m-1">of</span>
+        <Button variant="outline" onClick={() => refetchCount()}>
+          {count ?? "COUNT"}
+        </Button>
+        <IconButton
+          disabled={count !== undefined && offset + limit >= count}
+          onClick={() => {
+            let nextOffset = offset + limit;
+            if (count !== undefined)
+              nextOffset = Math.min(nextOffset, count - limit);
+
+            setOffset(nextOffset);
+          }}
+        >
+          <ChevronRight />
+        </IconButton>
+        <IconButton
+          disabled={count !== undefined && offset + limit >= count}
+          onClick={async () => {
+            let theCount = count ?? (await refetchCount()).data!;
+            setOffset(Math.max(0, theCount - limit));
+          }}
+        >
+          <ChevronLast />
+        </IconButton>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,8 @@
-from typing import Optional
+from typing import Literal, Optional
 from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
-from fastapi_pagination import add_pagination, LimitOffsetPage
-from fastapi_pagination.ext.sqlalchemy import paginate
 
 from .models import Node
 from .schema import NodeIn, NodeOut
@@ -32,12 +30,22 @@ def get_db():
 
 
 app = FastAPI()
-add_pagination(app)
 
 
-@app.get("/api/tree", response_model=LimitOffsetPage[NodeOut])
-def get_tree(db: Session = Depends(get_db)):
-    return paginate(db.query(Node).where(Node.start_id == None).order_by(Node.rank))
+@app.get("/api/tree", response_model=list[NodeOut])
+def get_tree(limit: int | Literal["all"], offset: int, db: Session = Depends(get_db)):
+    query = (
+        db.query(Node).where(Node.start_id == None).order_by(Node.rank).offset(offset)
+    )
+    if limit != "all":
+        query = query.limit(limit)
+
+    return query
+
+
+@app.get("/api/tree/count")
+def get_count(db: Session = Depends(get_db)) -> int:
+    return db.query(Node).where(Node.start_id == None).count()
 
 
 @app.post("/api/tree")

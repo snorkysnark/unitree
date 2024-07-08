@@ -14,57 +14,6 @@ export const $HTTPValidationError = {
     title: 'HTTPValidationError'
 } as const;
 
-export const $LimitOffsetPage_NodeOut_ = {
-    properties: {
-        items: {
-            items: {
-                '$ref': '#/components/schemas/NodeOut'
-            },
-            type: 'array',
-            title: 'Items'
-        },
-        total: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    minimum: 0
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Total'
-        },
-        limit: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    minimum: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Limit'
-        },
-        offset: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    minimum: 0
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Offset'
-        }
-    },
-    type: 'object',
-    required: ['items', 'total', 'limit', 'offset'],
-    title: 'LimitOffsetPage[NodeOut]'
-} as const;
-
 export const $NodeIn = {
     properties: {
         title: {

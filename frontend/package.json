@@ -11,6 +11,7 @@
         "generate-client": "openapi-ts --input http://localhost:8000/openapi.json --output ./src/client"
     },
     "dependencies": {
+        "@radix-ui/react-select": "^2.1.1",
         "@radix-ui/react-separator": "^1.1.0",
         "@radix-ui/react-slot": "^1.1.0",
         "@react-hookz/web": "^24.0.4",

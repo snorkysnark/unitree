@@ -2,7 +2,7 @@ import { TreePaginated } from "./treeview";
 
 function App() {
   return (
-    <div className="h-svh p-4">
+    <div className="h-svh">
       <TreePaginated />
     </div>
   );

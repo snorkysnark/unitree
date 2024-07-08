@@ -4,13 +4,6 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
-export type LimitOffsetPage_NodeOut_ = {
-    items: Array<NodeOut>;
-    total: number | null;
-    limit: number | null;
-    offset: number | null;
-};
-
 export type NodeIn = {
     title: string;
     children: Array<NodeIn>;
@@ -30,17 +23,11 @@ export type ValidationError = {
 };
 
 export type GetTreeApiTreeGetData = {
-    /**
-     * Page size limit
-     */
-    limit?: number;
-    /**
-     * Page offset
-     */
-    offset?: number;
+    limit: number | 'all';
+    offset: number;
 };
 
-export type GetTreeApiTreeGetResponse = LimitOffsetPage_NodeOut_;
+export type GetTreeApiTreeGetResponse = Array<NodeOut>;
 
 export type InsertTreeApiTreePostData = {
     insertBefore?: number | null;
@@ -48,6 +35,8 @@ export type InsertTreeApiTreePostData = {
 };
 
 export type InsertTreeApiTreePostResponse = unknown;
+
+export type GetCountApiTreeCountGetResponse = number;
 
 export type DeleteNodeApiNodeNodeIdDeleteData = {
     nodeId: number;
@@ -70,7 +59,7 @@ export type $OpenApiTs = {
                 /**
                  * Successful Response
                  */
-                200: LimitOffsetPage_NodeOut_;
+                200: Array<NodeOut>;
                 /**
                  * Validation Error
                  */
@@ -88,6 +77,16 @@ export type $OpenApiTs = {
                  * Validation Error
                  */
                 422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/tree/count': {
+        get: {
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: number;
             };
         };
     };
