@@ -1,177 +1,87 @@
-import { useCallback, useEffect, useState } from "react";
-
+import { Page_NodeOut_, getTreeApiTreeGet } from "@/client";
+import { useMountEffect } from "@react-hookz/web";
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronFirst,
-  ChevronLast,
-  Infinity,
-} from "lucide-react";
-import { Button } from "@/shadcn/ui/button";
+  QueryCache,
+  QueryObserver,
+  useInfiniteQuery,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectLabel,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shadcn/ui/select";
-import { Input } from "@/shadcn/ui/input";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getCountApiTreeCountGet, getTreeApiTreeGet } from "@/client";
-import TreeView from "./TreeView";
-import { Separator } from "@/shadcn/ui/separator";
+  ReactChild,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import { List, AutoSizer, ListRowRenderer } from "react-virtualized";
 
-function IconButton({ children, ...rest }: Parameters<typeof Button>[0]) {
-  return (
-    <Button variant="outline" size="icon" {...rest}>
-      {children}
-    </Button>
-  );
-}
+const PAGE_SIZE = 100;
 
 export default function TreePaginated() {
-  const [limitOption, setLimitOption] = useState("100");
-
-  const [limit, setLimit] = useState(100);
-  const [offset, setOffset] = useState(0);
+  const page1 = useQuery({
+    queryKey: ["tree", 1],
+    queryFn: () => getTreeApiTreeGet({ size: PAGE_SIZE, page: 1 }),
+  });
 
   const queryClient = useQueryClient();
+  const [onForceUpdate, forceUpdate] = useState({});
 
-  const [minDepth, setMinDepth] = useState(0);
-  const [maxDepth, setMaxDepth] = useState<number | null>(null);
+  useMountEffect(() => {
+    return queryClient.getQueryCache().subscribe((event) => {
+      const queryKey = event.query.queryKey;
+      if (
+        event.type === "updated" &&
+        event.action.type === "success" &&
+        Array.isArray(queryKey) &&
+        queryKey.length > 0 &&
+        queryKey[0] === "tree"
+      ) {
+        forceUpdate({});
+      }
+    });
+  });
 
-  const { data: tree } = useQuery({
-    queryKey: ["tree", limit, offset, minDepth, maxDepth],
-    queryFn: () => {
-      // query 1 extra item to check if next page exists
-      return getTreeApiTreeGet({
-        limit: limit + 1,
-        offset,
-        minDepth,
-        maxDepth: maxDepth ?? undefined,
-      });
-    },
-    select: (items) => {
-      let hasNextPage = false;
-      if (items.length > limit) {
-        items = items.slice(0, limit);
-        hasNextPage = true;
+  const rowRenderer = useCallback<ListRowRenderer>(
+    ({ key, style, index, isScrolling }) => {
+      const pageNum = Math.floor(index / PAGE_SIZE) + 1;
+      const pageData = queryClient.getQueryData(["tree", pageNum]) as
+        | Page_NodeOut_
+        | undefined;
+
+      let rowContent: ReactElement | string = "";
+      if (pageData) {
+        rowContent = pageData.items[index % PAGE_SIZE].title ?? "";
+      } else if (!isScrolling) {
+        queryClient.fetchQuery({
+          queryKey: ["tree", pageNum],
+          queryFn: () => getTreeApiTreeGet({ size: PAGE_SIZE, page: pageNum }),
+        });
       }
 
-      return { items, hasNextPage };
+      return (
+        <div key={key} style={style}>
+          {rowContent}
+        </div>
+      );
     },
-  });
-  const { data: count, refetch: refetchCount } = useQuery({
-    queryKey: ["count"],
-    refetchOnWindowFocus: false,
-    enabled: false,
-    queryFn: getCountApiTreeCountGet,
-  });
-
-  // For limit=All, fetch the count
-  useEffect(() => {
-    if (limitOption === "all") {
-      refetchCount().then((result) => {
-        if (result.data !== undefined) setLimit(result.data);
-      });
-    } else {
-      setLimit(+limitOption);
-    }
-  }, [limitOption]);
-
-  useEffect(() => {
-    // If on last page, we can compute count without query
-    if (tree && !tree.hasNextPage && count === undefined) {
-      queryClient.setQueryData(["count"], offset + tree.items.length);
-    }
-  }, [tree]);
+    [onForceUpdate]
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-scroll">
-        {tree && <TreeView nodes={tree.items} startingDepth={minDepth} />}
-      </div>
-      <div className="flex-shrink-0 flex-grow-0 p-2 flex items-center select-none">
-        <IconButton disabled={offset === 0} onClick={() => setOffset(0)}>
-          <ChevronFirst />
-        </IconButton>
-        <IconButton
-          disabled={offset === 0}
-          onClick={() => setOffset(Math.max(0, offset - limit))}
-        >
-          <ChevronLeft />
-        </IconButton>
-        <Select value={limitOption} onValueChange={setLimitOption}>
-          <SelectTrigger className="w-auto inline-flex">
-            <SelectValue asChild>
-              <span>
-                {offset}-{offset + limit}
-              </span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Page Size</SelectLabel>
-              <SelectItem value="100">100</SelectItem>
-              <SelectItem value="200">200</SelectItem>
-              <SelectItem value="500">500</SelectItem>
-              <SelectItem value="1000">1000</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <span className="m-1">of</span>
-        <Button variant="outline" onClick={() => refetchCount()}>
-          {count ?? "COUNT"}
-        </Button>
-        <IconButton
-          disabled={!tree?.hasNextPage}
-          onClick={() => {
-            let nextOffset = offset + limit;
-            if (count !== undefined)
-              nextOffset = Math.min(nextOffset, count - limit);
-
-            setOffset(nextOffset);
-          }}
-        >
-          <ChevronRight />
-        </IconButton>
-        <IconButton
-          disabled={!tree?.hasNextPage}
-          onClick={async () => {
-            let theCount = count ?? (await refetchCount()).data;
-            if (theCount !== undefined) {
-              setOffset(Math.max(0, theCount - limit));
-            }
-          }}
-        >
-          <ChevronLast />
-        </IconButton>
-        <Separator orientation="vertical" className="mx-2" />
-        <span className="m-1">Depth:</span>
-        <Input
-          type="number"
-          className="w-16"
-          value={minDepth}
-          onChange={(e) => {
-            const value = e.target.valueAsNumber;
-            setMinDepth(Number.isNaN(value) ? 0 : Math.max(0, value));
-          }}
-        />
-        <span className="m-1">-</span>
-        <Input
-          type="number"
-          placeholder="∞"
-          className="w-16"
-          value={maxDepth ?? ""}
-          onChange={(e) => {
-            const value = e.target.valueAsNumber;
-            setMaxDepth(Number.isNaN(value) ? null : Math.max(0, value));
-          }}
-        />
-      </div>
+      <AutoSizer>
+        {({ width, height }) => (
+          <List
+            width={width}
+            height={height}
+            rowHeight={20}
+            rowCount={page1.data?.total ?? 0}
+            rowRenderer={rowRenderer}
+          />
+        )}
+      </AutoSizer>
     </div>
   );
 }

@@ -16,6 +16,14 @@ export type NodeOut = {
     title: string | null;
 };
 
+export type Page_NodeOut_ = {
+    items: Array<NodeOut>;
+    total: number | null;
+    page: number | null;
+    size: number | null;
+    pages?: number | null;
+};
+
 export type ValidationError = {
     loc: Array<(string | number)>;
     msg: string;
@@ -23,13 +31,17 @@ export type ValidationError = {
 };
 
 export type GetTreeApiTreeGetData = {
-    limit: number;
-    maxDepth?: number | null;
-    minDepth?: number;
-    offset: number;
+    /**
+     * Page number
+     */
+    page?: number;
+    /**
+     * Page size
+     */
+    size?: number;
 };
 
-export type GetTreeApiTreeGetResponse = Array<NodeOut>;
+export type GetTreeApiTreeGetResponse = Page_NodeOut_;
 
 export type InsertTreeApiTreePostData = {
     insertBefore?: number | null;
@@ -61,7 +73,7 @@ export type $OpenApiTs = {
                 /**
                  * Successful Response
                  */
-                200: Array<NodeOut>;
+                200: Page_NodeOut_;
                 /**
                  * Validation Error
                  */

@@ -3,6 +3,8 @@ from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
+from fastapi_pagination import add_pagination, Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 from .models import Node
 from .schema import NodeIn, NodeOut
@@ -30,21 +32,12 @@ def get_db():
 
 
 app = FastAPI()
+add_pagination(app)
 
 
-@app.get("/api/tree", response_model=list[NodeOut])
-def get_tree(
-    limit: int,
-    offset: int,
-    minDepth: int = 0,
-    maxDepth: Optional[int] = None,
-    db: Session = Depends(get_db),
-):
-    query = db.query(Node).where((Node.start_id == None) & (Node.depth >= minDepth))
-    if maxDepth is not None:
-        query = query.where(Node.depth <= maxDepth)
-
-    return query.order_by(Node.rank).limit(limit).offset(offset)
+@app.get("/api/tree", response_model=Page[NodeOut])
+def get_tree(db: Session = Depends(get_db)):
+    return paginate(db.query(Node).where(Node.start_id == None))
 
 
 @app.get("/api/tree/count")

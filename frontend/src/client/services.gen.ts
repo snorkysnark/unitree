@@ -8,21 +8,17 @@ import type { GetTreeApiTreeGetData, GetTreeApiTreeGetResponse, InsertTreeApiTre
 /**
  * Get Tree
  * @param data The data for the request.
- * @param data.limit
- * @param data.offset
- * @param data.minDepth
- * @param data.maxDepth
- * @returns NodeOut Successful Response
+ * @param data.page Page number
+ * @param data.size Page size
+ * @returns Page_NodeOut_ Successful Response
  * @throws ApiError
  */
-export const getTreeApiTreeGet = (data: GetTreeApiTreeGetData): CancelablePromise<GetTreeApiTreeGetResponse> => { return __request(OpenAPI, {
+export const getTreeApiTreeGet = (data: GetTreeApiTreeGetData = {}): CancelablePromise<GetTreeApiTreeGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
     url: '/api/tree',
     query: {
-        limit: data.limit,
-        offset: data.offset,
-        minDepth: data.minDepth,
-        maxDepth: data.maxDepth
+        page: data.page,
+        size: data.size
     },
     errors: {
         422: 'Validation Error'

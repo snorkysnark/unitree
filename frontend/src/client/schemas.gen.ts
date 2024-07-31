@@ -64,6 +64,69 @@ export const $NodeOut = {
     title: 'NodeOut'
 } as const;
 
+export const $Page_NodeOut_ = {
+    properties: {
+        items: {
+            items: {
+                '$ref': '#/components/schemas/NodeOut'
+            },
+            type: 'array',
+            title: 'Items'
+        },
+        total: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Total'
+        },
+        page: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Page'
+        },
+        size: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Size'
+        },
+        pages: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    minimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Pages'
+        }
+    },
+    type: 'object',
+    required: ['items', 'total', 'page', 'size'],
+    title: 'Page[NodeOut]'
+} as const;
+
 export const $ValidationError = {
     properties: {
         loc: {
