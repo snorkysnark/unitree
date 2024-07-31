@@ -37,7 +37,7 @@ add_pagination(app)
 
 @app.get("/api/tree", response_model=Page[NodeOut])
 def get_tree(db: Session = Depends(get_db)):
-    return paginate(db.query(Node).where(Node.start_id == None))
+    return paginate(db.query(Node).where(Node.start_id == None).order_by(Node.rank))
 
 
 @app.get("/api/tree/count")
