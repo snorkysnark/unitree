@@ -52,9 +52,14 @@ export default function TreePaginated() {
 
       let rowContent: ReactElement | string = "";
       if (pageData) {
-        rowContent = pageData.items[index % PAGE_SIZE].title ?? "";
+        const node = pageData.items[index % PAGE_SIZE];
+        rowContent = (
+          <div style={{ marginLeft: `${node.depth * 32}px` }}>
+            {node.title ?? ""}
+          </div>
+        );
       } else if (!isScrolling) {
-        queryClient.fetchQuery({
+        queryClient.prefetchQuery({
           queryKey: ["tree", pageNum],
           queryFn: () => getTreeApiTreeGet({ size: PAGE_SIZE, page: pageNum }),
         });
@@ -76,7 +81,7 @@ export default function TreePaginated() {
           <List
             width={width}
             height={height}
-            rowHeight={20}
+            rowHeight={30}
             rowCount={page1.data?.total ?? 0}
             rowRenderer={rowRenderer}
           />
