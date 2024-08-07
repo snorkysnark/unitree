@@ -8,17 +8,17 @@ import type { GetTreeApiTreeGetData, GetTreeApiTreeGetResponse, InsertTreeApiTre
 /**
  * Get Tree
  * @param data The data for the request.
- * @param data.page Page number
- * @param data.size Page size
- * @returns Page_NodeOut_ Successful Response
+ * @param data.cursor
+ * @param data.limit
+ * @returns Page Successful Response
  * @throws ApiError
  */
 export const getTreeApiTreeGet = (data: GetTreeApiTreeGetData = {}): CancelablePromise<GetTreeApiTreeGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
     url: '/api/tree',
     query: {
-        page: data.page,
-        size: data.size
+        cursor: data.cursor,
+        limit: data.limit
     },
     errors: {
         422: 'Validation Error'

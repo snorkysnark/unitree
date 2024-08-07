@@ -1,4 +1,4 @@
-import { Page_NodeOut_, getTreeApiTreeGet } from "@/client";
+import { Page, getTreeApiTreeGet, getCountApiTreeCountGet } from "@/client";
 import { useMountEffect } from "@react-hookz/web";
 import {
   QueryCache,
@@ -9,82 +9,80 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  ReactChild,
   ReactElement,
+  ReactNode,
   useCallback,
   useEffect,
   useState,
 } from "react";
-import { List, AutoSizer, ListRowRenderer } from "react-virtualized";
+import {
+  List,
+  AutoSizer,
+  ListRowRenderer,
+  InfiniteLoader,
+} from "react-virtualized";
 
 const PAGE_SIZE = 100;
 
 export default function TreePaginated() {
-  const page1 = useQuery({
-    queryKey: ["tree", 1],
-    queryFn: () => getTreeApiTreeGet({ size: PAGE_SIZE, page: 1 }),
+  const { data, fetchNextPage } = useInfiniteQuery({
+    queryKey: ["tree"],
+    queryFn: ({ pageParam }) =>
+      getTreeApiTreeGet({ limit: PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.cursor,
   });
 
-  const queryClient = useQueryClient();
-  const [onForceUpdate, forceUpdate] = useState({});
-
-  useMountEffect(() => {
-    return queryClient.getQueryCache().subscribe((event) => {
-      const queryKey = event.query.queryKey;
-      if (
-        event.type === "updated" &&
-        event.action.type === "success" &&
-        Array.isArray(queryKey) &&
-        queryKey.length > 0 &&
-        queryKey[0] === "tree"
-      ) {
-        forceUpdate({});
-      }
-    });
+  const countQuery = useQuery({
+    queryKey: ["tree", "count"],
+    queryFn: () => getCountApiTreeCountGet(),
   });
+  const rowCount = countQuery.data ?? 0;
 
   const rowRenderer = useCallback<ListRowRenderer>(
-    ({ key, style, index, isScrolling }) => {
-      const pageNum = Math.floor(index / PAGE_SIZE) + 1;
-      const pageData = queryClient.getQueryData(["tree", pageNum]) as
-        | Page_NodeOut_
-        | undefined;
+    ({ key, index, style }) => {
+      let content: ReactNode = "";
 
-      let rowContent: ReactElement | string = "";
-      if (pageData) {
-        const node = pageData.items[index % PAGE_SIZE];
-        rowContent = (
-          <div style={{ marginLeft: `${node.depth * 32}px` }}>
-            {node.title ?? ""}
-          </div>
-        );
-      } else if (!isScrolling) {
-        queryClient.prefetchQuery({
-          queryKey: ["tree", pageNum],
-          queryFn: () => getTreeApiTreeGet({ size: PAGE_SIZE, page: pageNum }),
-        });
+      const page = Math.floor(index / PAGE_SIZE);
+      if (data && page < data.pages.length) {
+        const node =
+          data.pages[Math.floor(index / PAGE_SIZE)].data[index % PAGE_SIZE];
+
+        content = node.title;
       }
 
       return (
         <div key={key} style={style}>
-          {rowContent}
+          {content}
         </div>
       );
     },
-    [onForceUpdate]
+    [data]
   );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <AutoSizer>
         {({ width, height }) => (
-          <List
-            width={width}
-            height={height}
-            rowHeight={30}
-            rowCount={page1.data?.total ?? 0}
-            rowRenderer={rowRenderer}
-          />
+          <InfiniteLoader
+            isRowLoaded={({ index }) =>
+              data ? index / PAGE_SIZE < data.pages.length : false
+            }
+            loadMoreRows={() => fetchNextPage()}
+            rowCount={rowCount}
+          >
+            {({ onRowsRendered, registerChild }) => (
+              <List
+                width={width}
+                height={height}
+                onRowsRendered={onRowsRendered}
+                ref={registerChild}
+                rowCount={rowCount}
+                rowHeight={20}
+                rowRenderer={rowRenderer}
+              />
+            )}
+          </InfiniteLoader>
         )}
       </AutoSizer>
     </div>

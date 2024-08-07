@@ -64,67 +64,30 @@ export const $NodeOut = {
     title: 'NodeOut'
 } as const;
 
-export const $Page_NodeOut_ = {
+export const $Page = {
     properties: {
-        items: {
+        data: {
             items: {
                 '$ref': '#/components/schemas/NodeOut'
             },
             type: 'array',
-            title: 'Items'
+            title: 'Data'
         },
-        total: {
+        cursor: {
             anyOf: [
                 {
-                    type: 'integer',
-                    minimum: 0
+                    type: 'string'
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Total'
-        },
-        page: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    minimum: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Page'
-        },
-        size: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    minimum: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Size'
-        },
-        pages: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    minimum: 0
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Pages'
+            title: 'Cursor'
         }
     },
     type: 'object',
-    required: ['items', 'total', 'page', 'size'],
-    title: 'Page[NodeOut]'
+    required: ['data'],
+    title: 'Page'
 } as const;
 
 export const $ValidationError = {
