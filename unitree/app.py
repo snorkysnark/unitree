@@ -4,6 +4,7 @@ import alembic.command
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel, TypeAdapter
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import exists
 
 from .models import Node
 from .schema import NodeIn, NodeOut
@@ -35,15 +36,64 @@ app = FastAPI()
 
 class Page(BaseModel):
     data: list[NodeOut]
-    cursor: Optional[str] = None
+    before_cursor: Optional[str] = None
+    after_cursor: Optional[str] = None
 
 
 PageData = TypeAdapter(list[NodeOut])
 
 
-@app.get("/api/tree", response_model=list[NodeOut])
-def get_tree(db: Session = Depends(get_db)):
-    return db.query(Node).where(Node.start_id == None).order_by(Node.rank).all()
+@app.get("/api/tree", response_model=Page)
+def get_tree(
+    before_cursor: Optional[str] = None,
+    after_cursor: Optional[str] = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    if before_cursor and after_cursor:
+        raise ValueError(
+            "before_cursor and after_cursor parameters are mutually exclusive"
+        )
+
+    if before_cursor:
+        data = (
+            db.query(Node)
+            .where((Node.start_id == None) & (Node.rank < before_cursor))
+            .order_by(Node.rank.desc())
+            .limit(limit)
+            .all()
+        )
+        data.reverse()
+    else:
+        filter = Node.start_id == None
+        if after_cursor:
+            filter &= Node.rank > after_cursor
+
+        data = db.query(Node).where(filter).order_by(Node.rank.asc()).limit(limit).all()
+
+    next_before_cursor: Optional[str] = None
+    next_after_cursor: Optional[str] = None
+
+    if len(data) > 0:
+        next_before_cursor = data[0].rank
+        next_after_cursor = data[-1].rank
+
+        if not db.query(
+            exists().where((Node.start_id == None) & (Node.rank < next_before_cursor))
+        ).scalar():
+            # Previous page does not exist
+            next_before_cursor = None
+        if not db.query(
+            exists().where((Node.start_id == None) & (Node.rank > next_after_cursor))
+        ).scalar():
+            # Next page does not exist
+            next_after_cursor = None
+
+    return Page(
+        data=PageData.validate_python(data),
+        before_cursor=next_before_cursor,
+        after_cursor=next_after_cursor,
+    )
 
 
 @app.get("/api/tree/count")

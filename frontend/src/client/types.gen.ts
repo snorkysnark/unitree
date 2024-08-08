@@ -16,13 +16,25 @@ export type NodeOut = {
     title: string | null;
 };
 
+export type Page = {
+    data: Array<NodeOut>;
+    before_cursor?: string | null;
+    after_cursor?: string | null;
+};
+
 export type ValidationError = {
     loc: Array<(string | number)>;
     msg: string;
     type: string;
 };
 
-export type GetTreeApiTreeGetResponse = Array<NodeOut>;
+export type GetTreeApiTreeGetData = {
+    afterCursor?: string | null;
+    beforeCursor?: string | null;
+    limit?: number;
+};
+
+export type GetTreeApiTreeGetResponse = Page;
 
 export type InsertTreeApiTreePostData = {
     insertBefore?: number | null;
@@ -49,11 +61,16 @@ export type UpdateNodeApiNodeNodeIdPutResponse = unknown;
 export type $OpenApiTs = {
     '/api/tree': {
         get: {
+            req: GetTreeApiTreeGetData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: Array<NodeOut>;
+                200: Page;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
             };
         };
         post: {
