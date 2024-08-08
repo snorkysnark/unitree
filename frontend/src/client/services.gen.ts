@@ -3,26 +3,16 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetTreeApiTreeGetData, GetTreeApiTreeGetResponse, InsertTreeApiTreePostData, InsertTreeApiTreePostResponse, GetCountApiTreeCountGetResponse, DeleteNodeApiNodeNodeIdDeleteData, DeleteNodeApiNodeNodeIdDeleteResponse, UpdateNodeApiNodeNodeIdPutData, UpdateNodeApiNodeNodeIdPutResponse } from './types.gen';
+import type { GetTreeApiTreeGetResponse, InsertTreeApiTreePostData, InsertTreeApiTreePostResponse, GetCountApiTreeCountGetResponse, DeleteNodeApiNodeNodeIdDeleteData, DeleteNodeApiNodeNodeIdDeleteResponse, UpdateNodeApiNodeNodeIdPutData, UpdateNodeApiNodeNodeIdPutResponse } from './types.gen';
 
 /**
  * Get Tree
- * @param data The data for the request.
- * @param data.cursor
- * @param data.limit
- * @returns Page Successful Response
+ * @returns NodeOut Successful Response
  * @throws ApiError
  */
-export const getTreeApiTreeGet = (data: GetTreeApiTreeGetData = {}): CancelablePromise<GetTreeApiTreeGetResponse> => { return __request(OpenAPI, {
+export const getTreeApiTreeGet = (): CancelablePromise<GetTreeApiTreeGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
-    url: '/api/tree',
-    query: {
-        cursor: data.cursor,
-        limit: data.limit
-    },
-    errors: {
-        422: 'Validation Error'
-    }
+    url: '/api/tree'
 }); };
 
 /**

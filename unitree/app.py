@@ -41,29 +41,9 @@ class Page(BaseModel):
 PageData = TypeAdapter(list[NodeOut])
 
 
-@app.get("/api/tree", response_model=Page)
-def get_tree(
-    cursor: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)
-):
-    filter = Node.start_id == None
-    if cursor:
-        filter = filter & (Node.rank > cursor)
-
-    query = db.query(Node).where(filter).order_by(Node.rank).limit(limit)
-
-    data = query.all()
-    next_cursor = data[-1].rank if len(data) > 0 else None
-
-    if not db.query(
-        db.query(Node)
-        .where(Node.start_id == None)
-        .where(Node.rank > next_cursor)
-        .exists()
-    ).scalar():
-        # Next page is empty
-        next_cursor = None
-
-    return Page(data=PageData.validate_python(data), cursor=next_cursor)
+@app.get("/api/tree", response_model=list[NodeOut])
+def get_tree(db: Session = Depends(get_db)):
+    return db.query(Node).where(Node.start_id == None).order_by(Node.rank).all()
 
 
 @app.get("/api/tree/count")

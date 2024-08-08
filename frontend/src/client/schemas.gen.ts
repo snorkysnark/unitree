@@ -64,32 +64,6 @@ export const $NodeOut = {
     title: 'NodeOut'
 } as const;
 
-export const $Page = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/NodeOut'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        cursor: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Cursor'
-        }
-    },
-    type: 'object',
-    required: ['data'],
-    title: 'Page'
-} as const;
-
 export const $ValidationError = {
     properties: {
         loc: {
