@@ -1,10 +1,12 @@
-from typing import Optional
+import math
+import random
+from typing import Literal, Optional
 from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel, TypeAdapter
-from sqlalchemy.orm import Session, aliased, joinedload
-from sqlalchemy.sql import exists
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql import exists, select, func
 
 from .models import Node
 from .schema import NodeIn, NodeOut
@@ -99,16 +101,24 @@ def get_tree(
     )
 
 
-@app.get("/api/tree/count")
-def get_count(db: Session = Depends(get_db)) -> int:
-    return db.query(Node).where(Node.start_id == None).count()
+def _get_random_id(db: Session) -> int | None:
+    total_count = db.execute(select(func.count()).select_from(Node)).scalar() or 0
+    return db.execute(
+        select(Node.id).offset(math.floor(random.random() * (total_count + 1))).limit(1)
+    ).scalar()
 
 
 @app.post("/api/tree")
 def insert_tree(
-    data: NodeIn, insert_before: Optional[int] = None, db: Session = Depends(get_db)
+    data: NodeIn,
+    insert_before: int | Literal["random"] | None = None,
+    db: Session = Depends(get_db),
 ):
-    actions.insert_tree(db, data, before_id=insert_before)
+    actions.insert_tree(
+        db,
+        data,
+        before_id=_get_random_id(db) if insert_before == "random" else insert_before,
+    )
     return {}
 
 

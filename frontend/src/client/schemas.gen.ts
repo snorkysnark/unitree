@@ -14,6 +14,26 @@ export const $HTTPValidationError = {
     title: 'HTTPValidationError'
 } as const;
 
+export const $NodeEnd = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        rank: {
+            type: 'string',
+            title: 'Rank'
+        },
+        depth: {
+            type: 'integer',
+            title: 'Depth'
+        }
+    },
+    type: 'object',
+    required: ['id', 'rank', 'depth'],
+    title: 'NodeEnd'
+} as const;
+
 export const $NodeIn = {
     properties: {
         title: {
@@ -57,10 +77,13 @@ export const $NodeOut = {
                 }
             ],
             title: 'Title'
+        },
+        end: {
+            '$ref': '#/components/schemas/NodeEnd'
         }
     },
     type: 'object',
-    required: ['id', 'rank', 'depth', 'title'],
+    required: ['id', 'rank', 'depth', 'title', 'end'],
     title: 'NodeOut'
 } as const;
 

@@ -4,6 +4,12 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type NodeEnd = {
+    id: number;
+    rank: string;
+    depth: number;
+};
+
 export type NodeIn = {
     title: string;
     children: Array<NodeIn>;
@@ -14,6 +20,7 @@ export type NodeOut = {
     rank: string;
     depth: number;
     title: string | null;
+    end: NodeEnd;
 };
 
 export type Page = {
@@ -37,26 +44,11 @@ export type GetTreeApiTreeGetData = {
 export type GetTreeApiTreeGetResponse = Page;
 
 export type InsertTreeApiTreePostData = {
-    insertBefore?: number | null;
+    insertBefore?: number | 'random' | null;
     requestBody: NodeIn;
 };
 
 export type InsertTreeApiTreePostResponse = unknown;
-
-export type GetCountApiTreeCountGetResponse = number;
-
-export type DeleteNodeApiNodeNodeIdDeleteData = {
-    nodeId: number;
-};
-
-export type DeleteNodeApiNodeNodeIdDeleteResponse = unknown;
-
-export type UpdateNodeApiNodeNodeIdPutData = {
-    moveBefore: number | null;
-    nodeId: number;
-};
-
-export type UpdateNodeApiNodeNodeIdPutResponse = unknown;
 
 export type $OpenApiTs = {
     '/api/tree': {
@@ -75,44 +67,6 @@ export type $OpenApiTs = {
         };
         post: {
             req: InsertTreeApiTreePostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/api/tree/count': {
-        get: {
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: number;
-            };
-        };
-    };
-    '/api/node/{node_id}': {
-        delete: {
-            req: DeleteNodeApiNodeNodeIdDeleteData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-        put: {
-            req: UpdateNodeApiNodeNodeIdPutData;
             res: {
                 /**
                  * Successful Response
