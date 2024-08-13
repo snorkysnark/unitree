@@ -3,7 +3,7 @@ from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel, TypeAdapter
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased, joinedload
 from sqlalchemy.sql import exists
 
 from .models import Node
@@ -55,21 +55,24 @@ def get_tree(
             "before_cursor and after_cursor parameters are mutually exclusive"
         )
 
+    base_query = (
+        db.query(Node).options(joinedload(Node.end)).where(Node.start_id == None)
+    )
+
     if before_cursor:
         data = (
-            db.query(Node)
-            .where((Node.start_id == None) & (Node.rank < before_cursor))
+            base_query.where(Node.rank < before_cursor)
             .order_by(Node.rank.desc())
             .limit(limit)
             .all()
         )
         data.reverse()
     else:
-        filter = Node.start_id == None
+        query = base_query
         if after_cursor:
-            filter &= Node.rank > after_cursor
+            query = base_query.where(Node.rank > after_cursor)
 
-        data = db.query(Node).where(filter).order_by(Node.rank.asc()).limit(limit).all()
+        data = query.order_by(Node.rank.asc()).limit(limit).all()
 
     next_before_cursor: Optional[str] = None
     next_after_cursor: Optional[str] = None
