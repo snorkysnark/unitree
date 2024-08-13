@@ -8,6 +8,7 @@ import {
   InfiniteData,
   useInfiniteQuery,
   UseInfiniteQueryResult,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { useMeasure, usePrevious } from "@react-hookz/web";
 import { FixedSizeList as List, ListChildComponentProps } from "react-window";
@@ -122,6 +123,10 @@ export default function TreePaginated() {
 
   return (
     <div className="w-full h-full flex flex-col">
+      <div className="flex bg-gray-300 p-1">
+        <div className="flex-1" />
+        <button className="bg-white px-1">Populate</button>
+      </div>
       <div className="flex-1" ref={measureRef}>
         <List
           width={measurements?.width ?? 0}
@@ -134,17 +139,6 @@ export default function TreePaginated() {
         >
           {hasPreviousPage ? TreeNodeWithOffset : TreeNode}
         </List>
-      </div>
-      <div className="flex gap-2">
-        <button className="bg-gray-400" onClick={() => fetchPreviousPage()}>
-          Load Previous
-        </button>
-        <button className="bg-gray-400" onClick={() => fetchNextPage()}>
-          Load Next
-        </button>
-        <button className="bg-gray-400" onClick={() => refetch()}>
-          Refetch
-        </button>
       </div>
     </div>
   );
