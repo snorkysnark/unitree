@@ -1,8 +1,8 @@
 """create tree table
 
-Revision ID: c298c1caf962
+Revision ID: 5d750fd2953d
 Revises: 
-Create Date: 2024-06-27 18:58:25.398132
+Create Date: 2024-08-13 16:40:08.485528
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c298c1caf962'
+revision: str = '5d750fd2953d'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,6 +24,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('rank', sa.String(), nullable=False),
     sa.Column('start_id', sa.Integer(), nullable=True),
+    sa.Column('has_children', sa.Boolean(), nullable=False),
     sa.Column('depth', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['start_id'], ['tree.id'], ),

@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import mapped_column, relationship
 
 from .database import Base
@@ -10,6 +10,7 @@ class Node(Base):
     id = mapped_column(Integer, primary_key=True)
     rank = mapped_column(String, nullable=False, index=True, unique=True)
     start_id = mapped_column(Integer, ForeignKey("tree.id"), index=True, unique=True)
+    has_children = mapped_column(Boolean, nullable=False)
     depth = mapped_column(Integer, nullable=False)
     title = mapped_column(String)
 

@@ -112,15 +112,15 @@ def insert_tree(
     return {}
 
 
-@app.delete("/api/node/{node_id}")
-def delete_node(node_id: int, db: Session = Depends(get_db)):
-    actions.delete_node(db, node_id)
-    return {}
-
-
-@app.put("/api/node/{node_id}")
-def update_node(
-    node_id: int, move_before: Optional[int], db: Session = Depends(get_db)
-):
-    actions.move_node(db, node_id=node_id, move_before=move_before)
-    return {}
+# @app.delete("/api/node/{node_id}")
+# def delete_node(node_id: int, db: Session = Depends(get_db)):
+#     actions.delete_node(db, node_id)
+#     return {}
+#
+#
+# @app.put("/api/node/{node_id}")
+# def update_node(
+#     node_id: int, move_before: Optional[int], db: Session = Depends(get_db)
+# ):
+#     actions.move_node(db, node_id=node_id, move_before=move_before)
+#     return {}
