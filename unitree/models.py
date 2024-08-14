@@ -10,7 +10,7 @@ class Node(Base):
     id = mapped_column(Integer, primary_key=True)
     rank = mapped_column(String, nullable=False, index=True, unique=True)
     start_id = mapped_column(Integer, ForeignKey("tree.id"), index=True, unique=True)
-    has_children = mapped_column(Boolean, nullable=False)
+    has_children = mapped_column(Boolean, nullable=False, default=False)
     depth = mapped_column(Integer, nullable=False)
     title = mapped_column(String)
 
