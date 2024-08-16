@@ -18,31 +18,75 @@ import { useMutation } from "@tanstack/react-query";
 import { NodeIn, insertTreeApiTreePost } from "@/client";
 import { generateTree } from "./generateTree";
 
-function PopulateParams({
-  iterations,
-  onIterationsChange,
-}: {
+interface PopulateSettings {
   iterations: number;
-  onIterationsChange(value: number): void;
+  maxDepth: number;
+  maxChildren: number;
+}
+
+function PopulateSettingsEdit({
+  settings,
+  onSettingsChange,
+}: {
+  settings: PopulateSettings;
+  onSettingsChange(settings: PopulateSettings): void;
 }) {
   return (
     <>
-      <Label htmlFor="populate-iterations">Iterations:</Label>
+      <Label className="text-base" htmlFor="populate-iterations">
+        Iterations:
+      </Label>
       <div className="flex gap-2">
         <Slider
           min={1}
-          max={100000}
-          value={[iterations]}
-          onValueChange={([value]) => onIterationsChange(value)}
+          max={1000}
+          value={[settings.iterations]}
+          onValueChange={([iterations]) =>
+            onSettingsChange({ ...settings, iterations })
+          }
         />
         <Input
           id="populate-iterations"
           className="w-24"
           type="number"
           min={1}
-          value={iterations}
-          onChange={(e) => onIterationsChange(e.target.valueAsNumber)}
+          value={settings.iterations}
+          onChange={(e) =>
+            onSettingsChange({
+              ...settings,
+              iterations: e.target.valueAsNumber,
+            })
+          }
         />
+      </div>
+      <p className="text-sm">Single iteration:</p>
+      <div className="flex gap-2">
+        <Label>
+          Max depth
+          <Input
+            className="mt-2"
+            value={settings.maxDepth}
+            onChange={(e) =>
+              onSettingsChange({
+                ...settings,
+                maxDepth: e.target.valueAsNumber,
+              })
+            }
+          />
+        </Label>
+        <Label>
+          Max children
+          <Input
+            className="mt-2"
+            value={settings.maxChildren}
+            onChange={(e) =>
+              onSettingsChange({
+                ...settings,
+                maxChildren: e.target.valueAsNumber,
+              })
+            }
+          />
+        </Label>
       </div>
     </>
   );
@@ -51,7 +95,11 @@ function PopulateParams({
 const generateTreeDefault = () => generateTree({ maxDepth: 6, maxChildren: 4 });
 
 export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
-  const [iterations, setIterations] = useState(10000);
+  const [settings, setSettings] = useState<PopulateSettings>({
+    iterations: 200,
+    maxDepth: 12,
+    maxChildren: 20,
+  });
 
   const [progress, setProgress] = useState<number | null>(null);
   const mutation = useMutation({
@@ -59,7 +107,7 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
       insertTreeApiTreePost({ requestBody: tree, insertBefore: "random" }),
     onSuccess: () => {
       const progressNext = progress! + 1;
-      if (progressNext < iterations) {
+      if (progressNext < settings.iterations) {
         setProgress(progressNext);
         mutation.mutate(generateTreeDefault());
       } else {
@@ -90,12 +138,12 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
         </DialogHeader>
 
         {progress == null ? (
-          <PopulateParams
-            iterations={iterations}
-            onIterationsChange={setIterations}
+          <PopulateSettingsEdit
+            settings={settings}
+            onSettingsChange={setSettings}
           />
         ) : (
-          <Progress value={(progress / iterations) * 100} />
+          <Progress value={(progress / settings.iterations) * 100} />
         )}
 
         <DialogFooter>
