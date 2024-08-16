@@ -1,12 +1,14 @@
 import math
 import random
-from typing import Literal, Optional
+import os.path
+from typing import Literal
 from alembic.config import Config as AlembicConfig
 import alembic.command
 from fastapi import Depends, FastAPI
-from pydantic import BaseModel, TypeAdapter
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.sql import exists, select, func
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import select, func
 
 from .models import Node
 from .schema import NodeIn, NodeOut
@@ -33,7 +35,10 @@ def get_db():
         db.close()
 
 
+DIST_PATH = "frontend/dist"
+
 app = FastAPI()
+app.mount("/static", StaticFiles(directory=DIST_PATH), name="static")
 
 
 @app.get("/api/children/{node_id}", response_model=list[NodeOut])
@@ -74,3 +79,8 @@ def insert_tree(
         before_id=_get_random_id(db) if insert_before == "random" else insert_before,
     )
     return {}
+
+
+@app.get("/")
+def index():
+    return FileResponse(os.path.join(DIST_PATH, "index.html"))
