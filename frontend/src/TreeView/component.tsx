@@ -18,23 +18,7 @@ const ITEM_SIZE = 30;
 interface NodeData extends FixedSizeNodeData {
   model: NodeOut;
   downloaded: boolean;
-  onToggle: (id: number, isOpen: boolean) => void;
-}
-
-function makeNodeData(
-  model: NodeOut,
-  childrenQuery: object | undefined,
-  onToggle: (id: number, isOpen: boolean) => void
-): TreeWalkerValue<NodeData> {
-  return {
-    data: {
-      id: model.id.toString(),
-      model,
-      isOpenByDefault: false,
-      downloaded: !!childrenQuery,
-      onToggle,
-    },
-  };
+  download(id: number): void;
 }
 
 function getDropdownIcon(isOpen: boolean, downloaded: boolean): ReactNode {
@@ -46,7 +30,7 @@ function getDropdownIcon(isOpen: boolean, downloaded: boolean): ReactNode {
 }
 
 function TreeeNode({
-  data: { model, downloaded, onToggle },
+  data: { model, downloaded, download },
   isOpen,
   style,
   setOpen,
@@ -61,7 +45,7 @@ function TreeeNode({
           onClick={() => {
             const newState = !isOpen;
             setOpen(newState);
-            onToggle(model.id, newState);
+            if (newState) download(model.id);
           }}
         >
           {getDropdownIcon(isOpen, downloaded)}
@@ -73,16 +57,28 @@ function TreeeNode({
 }
 
 export default function TreeView() {
-  const openedNodeIds = useSet<ParentId>(["root"]);
-  const nodeChildren = useChildrenQuery(openedNodeIds);
+  const requestedIds = useSet<ParentId>(["root"]);
+  const nodeChildren = useChildrenQuery(requestedIds);
 
-  const onNodeToggle = useCallback((id: number, isOpen: boolean) => {
-    if (isOpen) {
-      openedNodeIds.add(id);
-    } else {
-      openedNodeIds.delete(id);
+  const download = useCallback((id: number) => {
+    if (!requestedIds.has(id)) {
+      requestedIds.add(id);
     }
   }, []);
+
+  const makeNodeData = useCallback(
+    (model: NodeOut) =>
+      ({
+        data: {
+          id: model.id.toString(),
+          model,
+          isOpenByDefault: false,
+          downloaded: !!nodeChildren[model.id]?.data,
+          download,
+        },
+      } as TreeWalkerValue<NodeData>),
+    [nodeChildren]
+  );
 
   const treeWalker = useCallback(
     function* treeWalker(): ReturnType<TreeWalker<NodeData>> {
@@ -90,8 +86,8 @@ export default function TreeView() {
         return;
       }
 
-      for (const node of nodeChildren.root.data) {
-        yield makeNodeData(node, nodeChildren[node.id], onNodeToggle);
+      for (const model of nodeChildren.root.data) {
+        yield makeNodeData(model);
       }
 
       // Define each node's children
@@ -100,8 +96,8 @@ export default function TreeView() {
         const children = nodeChildren[parentMeta.data.model.id];
 
         if (children && children.data) {
-          for (const node of children.data) {
-            yield makeNodeData(node, nodeChildren[node.id], onNodeToggle);
+          for (const model of children.data) {
+            yield makeNodeData(model);
           }
         }
       }
