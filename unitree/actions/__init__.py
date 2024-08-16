@@ -1,9 +1,7 @@
 from typing import Iterator, Optional
-from sqlalchemy import delete, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session, aliased
 from dataclasses import dataclass
-
-from tqdm import tqdm
 
 from unitree.models import Node
 from unitree.schema import NodeIn
@@ -153,13 +151,3 @@ def insert_tree(db: Session, tree: NodeIn, *, before_id: Optional[int] = None):
 #     )
 #     db.execute(delete(Node).where((Node.rank >= left_key) & (Node.rank <= right_key)))
 #     db.commit()
-
-
-def reindex(db: Session):
-    node_count = db.query(Node).count()
-    ranks = get_ranks_between(None, None, n=node_count)
-
-    for node, new_rank in tqdm(
-        zip(db.query(Node).order_by(Node.rank), ranks), total=node_count
-    ):
-        node.rank = new_rank

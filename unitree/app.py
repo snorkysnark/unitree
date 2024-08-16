@@ -1,6 +1,6 @@
 import math
 import random
-import os.path
+from pathlib import Path
 from typing import Literal
 from alembic.config import Config as AlembicConfig
 import alembic.command
@@ -16,6 +16,9 @@ from .settings import settings
 from .database import SessionLocal
 from . import actions
 
+project_path = Path(__file__).parent.parent
+static_path = project_path.joinpath("static")
+
 
 def run_migrations(alembic_path: str, database_url: str):
     cfg = AlembicConfig()
@@ -24,7 +27,7 @@ def run_migrations(alembic_path: str, database_url: str):
     alembic.command.upgrade(cfg, "head")
 
 
-run_migrations("alembic", settings.database_url)
+run_migrations(str(project_path.joinpath("alembic")), settings.database_url)
 
 
 def get_db():
@@ -35,10 +38,8 @@ def get_db():
         db.close()
 
 
-DIST_PATH = "frontend/dist"
-
 app = FastAPI()
-app.mount("/static", StaticFiles(directory=DIST_PATH), name="static")
+app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 
 @app.get("/api/children/{node_id}", response_model=list[NodeOut])
@@ -83,4 +84,4 @@ def insert_tree(
 
 @app.get("/")
 def index():
-    return FileResponse(os.path.join(DIST_PATH, "index.html"))
+    return FileResponse(static_path.joinpath("index.html"))
