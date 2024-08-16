@@ -14,26 +14,6 @@ export const $HTTPValidationError = {
     title: 'HTTPValidationError'
 } as const;
 
-export const $NodeEnd = {
-    properties: {
-        id: {
-            type: 'integer',
-            title: 'Id'
-        },
-        rank: {
-            type: 'string',
-            title: 'Rank'
-        },
-        depth: {
-            type: 'integer',
-            title: 'Depth'
-        }
-    },
-    type: 'object',
-    required: ['id', 'rank', 'depth'],
-    title: 'NodeEnd'
-} as const;
-
 export const $NodeIn = {
     properties: {
         title: {
@@ -78,50 +58,14 @@ export const $NodeOut = {
             ],
             title: 'Title'
         },
-        end: {
-            '$ref': '#/components/schemas/NodeEnd'
+        has_children: {
+            type: 'boolean',
+            title: 'Has Children'
         }
     },
     type: 'object',
-    required: ['id', 'rank', 'depth', 'title', 'end'],
+    required: ['id', 'rank', 'depth', 'title', 'has_children'],
     title: 'NodeOut'
-} as const;
-
-export const $Page = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/NodeOut'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        before_cursor: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Before Cursor'
-        },
-        after_cursor: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'After Cursor'
-        }
-    },
-    type: 'object',
-    required: ['data'],
-    title: 'Page'
 } as const;
 
 export const $ValidationError = {

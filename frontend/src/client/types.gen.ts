@@ -4,12 +4,6 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
-export type NodeEnd = {
-    id: number;
-    rank: string;
-    depth: number;
-};
-
 export type NodeIn = {
     title: string;
     children: Array<NodeIn>;
@@ -20,13 +14,7 @@ export type NodeOut = {
     rank: string;
     depth: number;
     title: string | null;
-    end: NodeEnd;
-};
-
-export type Page = {
-    data: Array<NodeOut>;
-    before_cursor?: string | null;
-    after_cursor?: string | null;
+    has_children: boolean;
 };
 
 export type ValidationError = {
@@ -35,13 +23,11 @@ export type ValidationError = {
     type: string;
 };
 
-export type GetTreeApiTreeGetData = {
-    afterCursor?: string | null;
-    beforeCursor?: string | null;
-    limit?: number;
+export type ChildrenOfApiChildrenNodeIdGetData = {
+    nodeId: number | 'root';
 };
 
-export type GetTreeApiTreeGetResponse = Page;
+export type ChildrenOfApiChildrenNodeIdGetResponse = Array<NodeOut>;
 
 export type InsertTreeApiTreePostData = {
     insertBefore?: number | 'random' | null;
@@ -51,20 +37,22 @@ export type InsertTreeApiTreePostData = {
 export type InsertTreeApiTreePostResponse = unknown;
 
 export type $OpenApiTs = {
-    '/api/tree': {
+    '/api/children/{node_id}': {
         get: {
-            req: GetTreeApiTreeGetData;
+            req: ChildrenOfApiChildrenNodeIdGetData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: Page;
+                200: Array<NodeOut>;
                 /**
                  * Validation Error
                  */
                 422: HTTPValidationError;
             };
         };
+    };
+    '/api/tree': {
         post: {
             req: InsertTreeApiTreePostData;
             res: {

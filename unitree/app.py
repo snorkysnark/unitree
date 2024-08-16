@@ -36,68 +36,22 @@ def get_db():
 app = FastAPI()
 
 
-class Page(BaseModel):
-    data: list[NodeOut]
-    before_cursor: Optional[str] = None
-    after_cursor: Optional[str] = None
+@app.get("/api/children/{node_id}", response_model=list[NodeOut])
+def children_of(node_id: int | Literal["root"], db: Session = Depends(get_db)):
+    if node_id != "root":
+        parent = db.query(Node).where(Node.id == node_id).one()
+        rank_start, rank_end = parent.get_range()
 
-
-PageData = TypeAdapter(list[NodeOut])
-
-
-@app.get("/api/tree", response_model=Page)
-def get_tree(
-    before_cursor: Optional[str] = None,
-    after_cursor: Optional[str] = None,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-):
-    if before_cursor and after_cursor:
-        raise ValueError(
-            "before_cursor and after_cursor parameters are mutually exclusive"
-        )
-
-    base_query = (
-        db.query(Node).options(joinedload(Node.end)).where(Node.start_id == None)
-    )
-
-    if before_cursor:
-        data = (
-            base_query.where(Node.rank < before_cursor)
-            .order_by(Node.rank.desc())
-            .limit(limit)
-            .all()
-        )
-        data.reverse()
+        target_depth = parent.depth + 1
+        range_filter = [Node.rank > rank_start, Node.rank < rank_end]
     else:
-        query = base_query
-        if after_cursor:
-            query = base_query.where(Node.rank > after_cursor)
+        target_depth = 0
+        range_filter = []
 
-        data = query.order_by(Node.rank.asc()).limit(limit).all()
-
-    next_before_cursor: Optional[str] = None
-    next_after_cursor: Optional[str] = None
-
-    if len(data) > 0:
-        next_before_cursor = data[0].rank
-        next_after_cursor = data[-1].rank
-
-        if not db.query(
-            exists().where((Node.start_id == None) & (Node.rank < next_before_cursor))
-        ).scalar():
-            # Previous page does not exist
-            next_before_cursor = None
-        if not db.query(
-            exists().where((Node.start_id == None) & (Node.rank > next_after_cursor))
-        ).scalar():
-            # Next page does not exist
-            next_after_cursor = None
-
-    return Page(
-        data=PageData.validate_python(data),
-        before_cursor=next_before_cursor,
-        after_cursor=next_after_cursor,
+    return (
+        db.query(Node)
+        .where(Node.start_id == None, Node.depth == target_depth, *range_filter)
+        .order_by(Node.rank)
     )
 
 
@@ -120,17 +74,3 @@ def insert_tree(
         before_id=_get_random_id(db) if insert_before == "random" else insert_before,
     )
     return {}
-
-
-# @app.delete("/api/node/{node_id}")
-# def delete_node(node_id: int, db: Session = Depends(get_db)):
-#     actions.delete_node(db, node_id)
-#     return {}
-#
-#
-# @app.put("/api/node/{node_id}")
-# def update_node(
-#     node_id: int, move_before: Optional[int], db: Session = Depends(get_db)
-# ):
-#     actions.move_node(db, node_id=node_id, move_before=move_before)
-#     return {}

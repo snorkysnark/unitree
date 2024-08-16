@@ -3,24 +3,20 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetTreeApiTreeGetData, GetTreeApiTreeGetResponse, InsertTreeApiTreePostData, InsertTreeApiTreePostResponse } from './types.gen';
+import type { ChildrenOfApiChildrenNodeIdGetData, ChildrenOfApiChildrenNodeIdGetResponse, InsertTreeApiTreePostData, InsertTreeApiTreePostResponse } from './types.gen';
 
 /**
- * Get Tree
+ * Children Of
  * @param data The data for the request.
- * @param data.beforeCursor
- * @param data.afterCursor
- * @param data.limit
- * @returns Page Successful Response
+ * @param data.nodeId
+ * @returns NodeOut Successful Response
  * @throws ApiError
  */
-export const getTreeApiTreeGet = (data: GetTreeApiTreeGetData = {}): CancelablePromise<GetTreeApiTreeGetResponse> => { return __request(OpenAPI, {
+export const childrenOfApiChildrenNodeIdGet = (data: ChildrenOfApiChildrenNodeIdGetData): CancelablePromise<ChildrenOfApiChildrenNodeIdGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
-    url: '/api/tree',
-    query: {
-        before_cursor: data.beforeCursor,
-        after_cursor: data.afterCursor,
-        limit: data.limit
+    url: '/api/children/{node_id}',
+    path: {
+        node_id: data.nodeId
     },
     errors: {
         422: 'Validation Error'

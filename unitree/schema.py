@@ -8,21 +8,12 @@ class NodeIn(BaseModel):
     children: list[NodeIn]
 
 
-class NodeEnd(BaseModel):
-    id: int
-    rank: str
-    depth: int
-
-    class Config:
-        from_attributes = True
-
-
 class NodeOut(BaseModel):
     id: int
     rank: str
     depth: int
     title: Optional[str]
-    end: NodeEnd
+    has_children: bool
 
     class Config:
         from_attributes = True

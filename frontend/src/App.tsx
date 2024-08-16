@@ -10,7 +10,9 @@ function App() {
           trigger={<button className="bg-white px-1">Populate</button>}
         />
       </div>
-      <TreeView />
+      <div className="flex-1">
+        <TreeView />
+      </div>
     </div>
   );
 }
