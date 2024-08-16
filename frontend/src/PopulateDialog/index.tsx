@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,7 @@ function PopulateSettingsEdit({
         <Label>
           Max depth
           <Input
+            type="number"
             className="mt-2"
             value={settings.maxDepth}
             onChange={(e) =>
@@ -77,6 +78,7 @@ function PopulateSettingsEdit({
         <Label>
           Max children
           <Input
+            type="number"
             className="mt-2"
             value={settings.maxChildren}
             onChange={(e) =>
@@ -92,7 +94,12 @@ function PopulateSettingsEdit({
   );
 }
 
-const generateTreeDefault = () => generateTree({ maxDepth: 6, maxChildren: 4 });
+type DialogStatus =
+  | {
+      mode: "settings";
+    }
+  | { mode: "progress"; progress: number }
+  | { mode: "closing" };
 
 export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
   const [settings, setSettings] = useState<PopulateSettings>({
@@ -100,34 +107,60 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
     maxDepth: 12,
     maxChildren: 20,
   });
+  const [status, setStatus] = useState<DialogStatus>({ mode: "settings" });
+  const treeFromSettings = useCallback(
+    () =>
+      generateTree({
+        maxDepth: settings.maxDepth,
+        maxChildren: settings.maxChildren,
+      }),
+    [settings]
+  );
 
-  const [progress, setProgress] = useState<number | null>(null);
   const mutation = useMutation({
     mutationFn: (tree: NodeIn) =>
       insertTreeApiTreePost({ requestBody: tree, insertBefore: "random" }),
-    onSuccess: () => {
-      const progressNext = progress! + 1;
-      if (progressNext < settings.iterations) {
-        setProgress(progressNext);
-        mutation.mutate(generateTreeDefault());
-      } else {
-        setProgress(null);
+    onSuccess() {
+      if (status.mode == "progress") {
+        const progressNext = status.progress + 1;
+        if (progressNext < settings.iterations) {
+          setStatus({ mode: "progress", progress: progressNext });
+          mutation.mutate(treeFromSettings());
+        } else {
+          setStatus({ mode: "settings" });
+        }
+      }
+    },
+    onSettled() {
+      if (status.mode == "closing") {
+        setOpen(false);
       }
     },
   });
 
-  const beginPopulate = useCallback(() => {
-    setProgress(0);
-    mutation.mutate(generateTreeDefault());
-  }, []);
-
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      // Reset status after closing
+      setStatus({ mode: "settings" });
+    }
+  }, [open]);
+  useEffect(() => {
+    if (status.mode == "closing" && !mutation.isPending) {
+      // Close immediately if no transaction in progress
+      setOpen(false);
+    }
+  }, [status.mode, mutation.isPending]);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(value) => {
-        if (value || progress == null) setOpen(value);
+        if (value) {
+          setOpen(true);
+        } else {
+          setStatus({ mode: "closing" });
+        }
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -137,17 +170,25 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
           <DialogDescription>Fill with random data</DialogDescription>
         </DialogHeader>
 
-        {progress == null ? (
+        {status.mode === "closing" ? (
+          <p>Closing</p>
+        ) : status.mode === "settings" ? (
           <PopulateSettingsEdit
             settings={settings}
             onSettingsChange={setSettings}
           />
         ) : (
-          <Progress value={(progress / settings.iterations) * 100} />
+          <Progress value={(status.progress / settings.iterations) * 100} />
         )}
 
         <DialogFooter>
-          <Button disabled={progress != null} onClick={beginPopulate}>
+          <Button
+            disabled={status.mode !== "settings"}
+            onClick={() => {
+              setStatus({ mode: "progress", progress: 0 });
+              mutation.mutate(treeFromSettings());
+            }}
+          >
             Run
           </Button>
         </DialogFooter>
