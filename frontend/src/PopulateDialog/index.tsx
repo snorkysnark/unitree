@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,77 +18,35 @@ import { useMutation } from "@tanstack/react-query";
 import { NodeIn, insertTreeApiTreePost } from "@/client";
 import { generateTree } from "./generateTree";
 
-interface PopulateSettings {
-  iterations: number;
-  maxDepth: number;
-  maxChildren: number;
+function generateTreeDefault() {
+  return generateTree({ maxDepth: 6, maxChildren: 4 });
 }
 
 function PopulateSettingsEdit({
-  settings,
-  onSettingsChange,
+  iterations,
+  onIterationsChange,
 }: {
-  settings: PopulateSettings;
-  onSettingsChange(settings: PopulateSettings): void;
+  iterations: number;
+  onIterationsChange(value: number): void;
 }) {
   return (
     <>
-      <Label className="text-base" htmlFor="populate-iterations">
-        Iterations:
-      </Label>
+      <Label htmlFor="populate-iterations">Iterations:</Label>
       <div className="flex gap-2">
         <Slider
           min={1}
           max={1000}
-          value={[settings.iterations]}
-          onValueChange={([iterations]) =>
-            onSettingsChange({ ...settings, iterations })
-          }
+          value={[iterations]}
+          onValueChange={([value]) => onIterationsChange(value)}
         />
         <Input
           id="populate-iterations"
           className="w-24"
           type="number"
           min={1}
-          value={settings.iterations}
-          onChange={(e) =>
-            onSettingsChange({
-              ...settings,
-              iterations: e.target.valueAsNumber,
-            })
-          }
+          value={iterations}
+          onChange={(e) => onIterationsChange(e.target.valueAsNumber)}
         />
-      </div>
-      <p className="text-sm">Single iteration:</p>
-      <div className="flex gap-2">
-        <Label>
-          Max depth
-          <Input
-            type="number"
-            className="mt-2"
-            value={settings.maxDepth}
-            onChange={(e) =>
-              onSettingsChange({
-                ...settings,
-                maxDepth: e.target.valueAsNumber,
-              })
-            }
-          />
-        </Label>
-        <Label>
-          Max children
-          <Input
-            type="number"
-            className="mt-2"
-            value={settings.maxChildren}
-            onChange={(e) =>
-              onSettingsChange({
-                ...settings,
-                maxChildren: e.target.valueAsNumber,
-              })
-            }
-          />
-        </Label>
       </div>
     </>
   );
@@ -102,20 +60,8 @@ type DialogStatus =
   | { mode: "closing" };
 
 export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
-  const [settings, setSettings] = useState<PopulateSettings>({
-    iterations: 200,
-    maxDepth: 12,
-    maxChildren: 20,
-  });
+  const [iterations, setIterations] = useState(500);
   const [status, setStatus] = useState<DialogStatus>({ mode: "settings" });
-  const treeFromSettings = useCallback(
-    () =>
-      generateTree({
-        maxDepth: settings.maxDepth,
-        maxChildren: settings.maxChildren,
-      }),
-    [settings]
-  );
 
   const mutation = useMutation({
     mutationFn: (tree: NodeIn) =>
@@ -123,9 +69,9 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
     onSuccess() {
       if (status.mode == "progress") {
         const progressNext = status.progress + 1;
-        if (progressNext < settings.iterations) {
+        if (progressNext < iterations) {
           setStatus({ mode: "progress", progress: progressNext });
-          mutation.mutate(treeFromSettings());
+          mutation.mutate(generateTreeDefault());
         } else {
           setStatus({ mode: "settings" });
         }
@@ -174,11 +120,11 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
           <p>Closing</p>
         ) : status.mode === "settings" ? (
           <PopulateSettingsEdit
-            settings={settings}
-            onSettingsChange={setSettings}
+            iterations={iterations}
+            onIterationsChange={setIterations}
           />
         ) : (
-          <Progress value={(status.progress / settings.iterations) * 100} />
+          <Progress value={(status.progress / iterations) * 100} />
         )}
 
         <DialogFooter>
@@ -186,7 +132,7 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
             disabled={status.mode !== "settings"}
             onClick={() => {
               setStatus({ mode: "progress", progress: 0 });
-              mutation.mutate(treeFromSettings());
+              mutation.mutate(generateTreeDefault());
             }}
           >
             Run
