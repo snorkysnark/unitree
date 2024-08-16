@@ -59,7 +59,15 @@ type DialogStatus =
   | { mode: "progress"; progress: number }
   | { mode: "closing" };
 
-export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
+export default function PopulateDialog({
+  trigger,
+  open,
+  onOpenChange,
+}: {
+  trigger: ReactNode;
+  open: boolean;
+  onOpenChange(value: boolean): void;
+}) {
   const [iterations, setIterations] = useState(500);
   const [status, setStatus] = useState<DialogStatus>({ mode: "settings" });
 
@@ -79,12 +87,11 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
     },
     onSettled() {
       if (status.mode == "closing") {
-        setOpen(false);
+        onOpenChange(false);
       }
     },
   });
 
-  const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) {
       // Reset status after closing
@@ -94,7 +101,7 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
   useEffect(() => {
     if (status.mode == "closing" && !mutation.isPending) {
       // Close immediately if no transaction in progress
-      setOpen(false);
+      onOpenChange(false);
     }
   }, [status.mode, mutation.isPending]);
 
@@ -103,7 +110,7 @@ export default function PopulateDialog({ trigger }: { trigger: ReactNode }) {
       open={open}
       onOpenChange={(value) => {
         if (value) {
-          setOpen(true);
+          onOpenChange(true);
         } else {
           setStatus({ mode: "closing" });
         }
